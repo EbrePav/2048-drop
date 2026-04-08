@@ -1568,6 +1568,7 @@ function showTrueGameOver(){
   document.getElementById('go-score').textContent=formatNum(finalScore);
   document.getElementById('go-best').textContent=formatNum(allTimeBest);
   postGameOverlayPending=true;
+  endGameSession();
   document.getElementById('gameover-overlay').classList.add('show');blockBar();
 }
 
