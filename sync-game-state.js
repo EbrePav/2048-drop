@@ -2,7 +2,7 @@
 // Синхронизация состояния игры с бэком
 // ============================================
 
-const API_BASE_URL = 'https://2048-backend-two.vercel.app';
+const API_BASE_URL = 'https://2048-backend-production-d63b.up.railway.app';
 let authToken = localStorage.getItem('authToken') || '';
 let serverTime = null;
 let autoSaveTimer = null;
