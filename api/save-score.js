@@ -3,7 +3,7 @@ import { kv } from '@vercel/kv';
 export default async function handler(req, res) {
   if (req.method === 'POST') {
     try {
-      const { userId, score } = req.body;
+      const { userId, score, username } = req.body;
       if (!userId || score === undefined) {
         return res.status(400).json({ error: 'Missing userId or score' });
       }
@@ -12,11 +12,23 @@ export default async function handler(req, res) {
       const index = leaderboard.findIndex(p => p.userId === userId);
       
       if (index >= 0) {
-        leaderboard[index].score = Math.max(leaderboard[index].score, score);
+        // Обновляем только если новый score выше
+        if (score > leaderboard[index].score) {
+          leaderboard[index].score = score;
+          leaderboard[index].username = username || `User${userId}`;
+          leaderboard[index].updatedAt = new Date().toISOString();
+        }
       } else {
-        leaderboard.push({ userId, score });
+        // Новый игрок
+        leaderboard.push({ 
+          userId, 
+          score, 
+          username: username || `User${userId}`,
+          createdAt: new Date().toISOString()
+        });
       }
       
+      // Сортируем по score
       leaderboard.sort((a, b) => b.score - a.score);
       await kv.set('leaderboard', leaderboard);
       
