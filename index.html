@@ -2153,13 +2153,8 @@ if (TG_USER && TG_USER.id) {
   
   // Загрузить состояние с сервера
   console.log('Loading game state from server...');
-  (async () => {
-    await syncWithServer();
-    allTimeBest = await loadBestFromServer();
-    updateHUD();
-    console.log("✅ Game state loaded, best:", allTimeBest);
-    startAutoSave();
-  })();
+  syncWithServer();
+  startAutoSave();
 
 }
 </script>
