@@ -199,43 +199,6 @@ html.macbook-tg #pwr-ad .pwr-icon{
   font-size:11px !important;
 }
 
-@media(min-width:600px){
-  .pwr{box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:all 0.2s ease;}
-  .pwr:active{transform:scale(0.95);box-shadow:0 2px 6px rgba(0,0,0,0.2);}
-  .pwr:hover{box-shadow:0 6px 16px rgba(0,0,0,0.4);}
-}
-@media(min-width:800px){
-  .pwr-icon{font-size:13px!important;}
-  .pwr-label{font-size:6px!important;}
-  .pwr-cost{font-size:6px!important;}
-  .pwr{min-height:46px!important;padding:2px 1px!important;gap:0px!important;border-radius:12px!important;}
-  #pause-btn-bottom{font-size:16px!important;min-height:46px!important;border-radius:12px!important;}
-  #bottom-bar{gap:2px!important;margin-top:1px!important;}
-}
-
-@media(min-width:600px){
-  .pwr{box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:all 0.2s ease;}
-  .pwr:active{transform:scale(0.95);box-shadow:0 2px 6px rgba(0,0,0,0.2);}
-  .pwr:hover{box-shadow:0 6px 16px rgba(0,0,0,0.4);}
-}
-@media(min-width:800px){
-  .pwr-icon{font-size:13px!important;}
-  .pwr-label{font-size:6px!important;}
-  .pwr-cost{font-size:6px!important;}
-  .pwr{min-height:46px!important;padding:2px 1px!important;gap:0px!important;border-radius:12px!important;}
-  #pause-btn-bottom{font-size:16px!important;min-height:46px!important;border-radius:12px!important;}
-  #bottom-bar{gap:2px!important;margin-top:1px!important;}
-}
-
-@media(min-width:800px){
-  .pwr-icon{font-size:14px!important;}
-  .pwr-label{font-size:7px!important;}
-  .pwr-cost{font-size:7px!important;}
-  .pwr{min-height:48px!important;padding:3px 2px!important;gap:1px!important;}
-  #pause-btn-bottom{font-size:18px!important;min-height:48px!important;}
-  #bottom-bar{gap:3px!important;margin-top:2px!important;}
-  #daily-bonus-icon{font-size:18px!important;}
-}
 </style>
 </head>
 <body>
@@ -332,7 +295,6 @@ html.macbook-tg #pwr-ad .pwr-icon{
       <div class="daily-note" id="daily-note">Сегодня можно забрать стандартную награду или удвоить её за просмотр рекламы.</div>
       <div class="daily-actions">
         <button class="modal-btn btn-green" id="daily-claim-btn">Забрать</button>
-        <div id="daily-timer" style="font-size:12px;color:#29b6f6;margin-top:4px;font-weight:600;text-align:center;font-family:monospace;">00:00:00</div>
         <button class="modal-btn btn-gray" id="daily-claim-x2-btn">x2 за рекламу</button>
       </div>
       <button class="modal-btn btn-gray" id="daily-close" style="width:100%;margin-top:8px;">Закрыть</button>
@@ -2170,7 +2132,7 @@ if(TG_USER){
 </body>
 </html>
 
-<script src="sync-firebase.js"></script>
+<script src="sync-game-state.js"></script>
 
 <script>
 // Инициализация синхронизации при открытии
@@ -2182,7 +2144,6 @@ if (TG_USER && TG_USER.id) {
   console.log('Loading game state from server...');
   syncWithServer().then(() => {
     console.log('✅ Game state loaded');
-    refreshDailyRewardInfo();
     startAutoSave();
   }).catch(err => {
     console.error('Failed to load state:', err);
