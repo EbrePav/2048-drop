@@ -1069,11 +1069,24 @@ function loadGems(){
 function saveGems(val){
   try{localStorage.setItem('2048_gems',String(val));}catch(e){}
 }
+async function loadBestFromServer(){
+  if(!TG_USER||!TG_USER.id)return 0;
+  try{
+    const res=await fetch(`/api/get-best-score?userId=${TG_USER.id}`);
+    const data=await res.json();
+    if(data.success&&data.bestScore>0)return data.bestScore;
+  }catch(e){console.error(e);}
+  const local=localStorage.getItem("2048_best");
+  return local?parseInt(local):0;
+}
 function loadBest(){
-  try{const v=localStorage.getItem('2048_best');return v?parseInt(v):0;}catch(e){return 0;}
+  const local=localStorage.getItem("2048_best");
+  return local?parseInt(local):0;
 }
 function saveBest(val){
-  try{localStorage.setItem('2048_best',String(val));}catch(e){}
+  try{localStorage.setItem("2048_best",String(val));}catch(e){}
+}
+
 }
 
 // ── SAVE / RESTORE GAME STATE ─────────────────────────
@@ -2142,11 +2155,13 @@ if (TG_USER && TG_USER.id) {
   
   // Загрузить состояние с сервера
   console.log('Loading game state from server...');
-  syncWithServer().then(() => {
-    console.log('✅ Game state loaded');
+  (async () => {
+    await syncWithServer();
+    allTimeBest = await loadBestFromServer();
+    updateHUD();
+    console.log("✅ Game state loaded, best:", allTimeBest);
     startAutoSave();
-  }).catch(err => {
-    console.error('Failed to load state:', err);
-  });
+  })();
+
 }
 </script>
