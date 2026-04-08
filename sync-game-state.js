@@ -1,90 +1,57 @@
-// ============================================
-// Синхронизация состояния игры с бэком
-// ============================================
-
 const API_BASE_URL = 'https://2048-backend-production-d63b.up.railway.app';
-let authToken = localStorage.getItem('authToken') || '';
-let serverTime = null;
-let autoSaveTimer = null;
-
-// ============ ЗАГРУЗИТЬ СОСТОЯНИЕ ============
 
 async function syncWithServer() {
   if (!authToken) {
-    console.warn('No auth token');
+    console.log('No auth token');
     return false;
   }
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/game/load-state`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      body: JSON.stringify({ userId: authToken })
     });
 
     const data = await response.json();
-
-    if (!data.user) {
+    if (data.success) {
+      allTimeBest = data.user.best_score;
+      gems = data.user.gems;
+      updateHUD();
+      console.log('✅ Synced with server');
+      return true;
+    } else {
       console.error('Failed to load state:', data.error);
       return false;
     }
-
-    // Синхронизируем данные
-    gems = data.user.gems;
-    allTimeBest = data.user.best_score;
-    serverTime = new Date(data.server_time);
-
-    // Загружаем сохраненное состояние игры
-    if (data.game_session) {
-      grid = data.game_session.grid;
-      throws = data.game_session.throws;
-      score = data.game_session.score;
-    }
-
-    // Инициализируем дневную награду
-    if (data.daily_reward) {
-      initDailyReward(data.daily_reward);
-    }
-
-    console.log('✅ Synced with server');
-    updateHUD();
-    return true;
-  } catch (error) {
-    console.error('Sync error:', error);
+  } catch (err) {
+    console.error('Sync error:', err);
     return false;
   }
 }
 
-// ============ АВТОСЕЙВ ============
-
-function startAutoSave() {
-  if (autoSaveTimer) clearInterval(autoSaveTimer);
-
-  autoSaveTimer = setInterval(async () => {
-    if (!started || gameOver || paused) return;
-
+async function startAutoSave() {
+  setInterval(async () => {
+    if (!authToken) return;
+    
     try {
       await fetch(`${API_BASE_URL}/api/game/save-state`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
         body: JSON.stringify({
-          grid, falling, throws, score, gems,
-          client_timestamp: Math.floor(Date.now() / 1000)
+          userId: authToken,
+          grid: grid,
+          falling: falling,
+          throws: throwsCount,
+          score: score,
+          gems_earned: 0
         })
       });
-      console.log('💾 Auto-saved');
-    } catch (e) {
-      console.error('Autosave error:', e);
+    } catch (err) {
+      console.error('Save error:', err);
     }
-  }, 30000); // каждые 30 сек
+  }, 30000);
 }
-
-// ============ КОНЕЦ ИГРЫ ============
 
 async function endGameSession() {
   if (!authToken) return;
@@ -92,68 +59,24 @@ async function endGameSession() {
   try {
     const response = await fetch(`${API_BASE_URL}/api/game/end-session`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
       body: JSON.stringify({
+        userId: authToken,
         final_score: score,
-        gems_earned: gemsThisTurn || 0,
-        duration_seconds: Math.floor((Date.now() - gameStartTime) / 1000)
+        gems_earned: 0
       })
     });
 
     const data = await response.json();
-
     if (data.success) {
-      gems = data.total_gems;
       allTimeBest = data.new_best_score;
-      if (data.best_score_updated) {
-        showToast('🏆 New best score!');
-      }
-      console.log('Game session ended');
+      gems = data.total_gems;
       updateHUD();
+      console.log('✅ Session ended, synced with server');
     }
-  } catch (error) {
-    console.error('End session error:', error);
+  } catch (err) {
+    console.error('End session error:', err);
   }
-}
-
-// ============ ДНЕВНЫЕ НАГРАДЫ ============
-
-function initDailyReward(dailyData) {
-  window.dailyRewardData = dailyData;
-
-  if (dailyData.can_claim) {
-    const card = document.getElementById('daily-bonus-card');
-    if (card) card.style.opacity = '1';
-  }
-
-  startDailyTimer(dailyData.time_until_next);
-}
-
-function startDailyTimer(secondsUntilNext) {
-  let remaining = secondsUntilNext;
-
-  const updateTimer = () => {
-    remaining--;
-    if (remaining <= 0) {
-      refreshDailyRewardInfo();
-      return;
-    }
-
-    const h = Math.floor(remaining / 3600);
-    const m = Math.floor((remaining % 3600) / 60);
-    const s = remaining % 60;
-
-    const timerEl = document.querySelector('[data-daily-timer]');
-    if (timerEl) {
-      timerEl.textContent = `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    }
-  };
-
-  updateTimer();
-  setInterval(updateTimer, 1000);
 }
 
 async function refreshDailyRewardInfo() {
@@ -161,20 +84,17 @@ async function refreshDailyRewardInfo() {
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/daily-reward/info`, {
+      method: 'GET',
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
 
     const data = await response.json();
-    initDailyReward({
-      current_day: data.current_day,
-      current_reward: data.current_reward,
-      can_claim: data.can_claim_today,
-      time_until_next: data.time_until_reset,
-      claimed_today: !data.can_claim_today,
-      can_watch_x2: data.can_claim_today
-    });
-  } catch (error) {
-    console.error('Daily info error:', error);
+    if (data.can_claim) {
+      document.getElementById('daily-claim-btn').style.display = 'block';
+    }
+    startDailyTimer(data.time_until_next);
+  } catch (err) {
+    console.error('Daily reward error:', err);
   }
 }
 
@@ -184,25 +104,45 @@ async function claimDailyReward(watchX2 = false) {
   try {
     const response = await fetch(`${API_BASE_URL}/api/daily-reward/claim`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ with_x2: watchX2 })
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      body: JSON.stringify({ userId: authToken, with_x2: watchX2 })
     });
 
     const data = await response.json();
-
     if (data.success) {
       gems = data.total_gems;
-      const txt = watchX2 ? `x2: +${data.gems_received} 💎` : `+${data.gems_received} 💎`;
-      showToast(txt);
       updateHUD();
-      await refreshDailyRewardInfo();
-    } else {
-      showToast('Already claimed today');
+      console.log('✅ Daily reward claimed:', data.gems_received);
+      return true;
     }
-  } catch (error) {
-    console.error('Claim error:', error);
+  } catch (err) {
+    console.error('Claim reward error:', err);
   }
+  return false;
+}
+
+function startDailyTimer(secondsUntilNext) {
+  const timerEl = document.getElementById('daily-timer');
+  if (!timerEl) return;
+
+  let remaining = secondsUntilNext;
+  const updateTimer = () => {
+    const hours = Math.floor(remaining / 3600);
+    const minutes = Math.floor((remaining % 3600) / 60);
+    const seconds = remaining % 60;
+    
+    timerEl.textContent = `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    
+    if (remaining > 0) {
+      remaining--;
+      setTimeout(updateTimer, 1000);
+    }
+  };
+  
+  updateTimer();
+}
+
+function updateHUD() {
+  document.getElementById('best-val').textContent = formatNum(allTimeBest);
+  document.getElementById('gems-val').textContent = formatNum(gems);
 }
