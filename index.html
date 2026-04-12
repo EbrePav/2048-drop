@@ -2716,10 +2716,10 @@ function checkAndMerge(newR,newC,cb){
   grp.forEach(([r,c])=>setTA(r,c,1.2,16));draw();
   setTimeout(()=>{
     if(grp.length===2){
-      const other=grp.find(([r,c])=>!(r===newR&&c===newC));const[or,oc]=other;
-      // Vertical: upper→lower. Horizontal: right→left. Result always at lower/left.
-      const shouldSwap=newR>or||(newR===or&&newC<oc);
-      const[flyR,flyC,toR,toC]=shouldSwap?[or,oc,newR,newC]:[newR,newC,or,oc];
+      // Direction purely from positions: upper→lower, right→left. Ignore which is newR/newC.
+      const[[ar,ac],[br,bc]]=grp;
+      const aFlies=ar<br||(ar===br&&ac>bc);
+      const[flyR,flyC,toR,toC]=aFlies?[ar,ac,br,bc]:[br,bc,ar,ac];
       grid[flyR][flyC]=0;
       animFly([{val:v,x:TX(flyC),y:TY(flyR)}],TX(toC),TY(toR),()=>{
         const nv=mRes(v,2);score+=nv;grid[toR][toC]=nv;
