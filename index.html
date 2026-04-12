@@ -1058,6 +1058,11 @@ function getGuestId(){
   }
 }
 const LB_USER_ID = TG_USER ? String(TG_USER.id) : getGuestId();
+
+// Namespace all per-user localStorage keys so different Telegram accounts
+// on the same device never share game state.
+function lsKey(key){ return key + ':' + LB_USER_ID; }
+
 const LB_USER_NAME = TG_USER
   ? [TG_USER.first_name, TG_USER.last_name].filter(Boolean).join(' ').trim()
   : 'Guest '+LB_USER_ID.slice(-4).toUpperCase();
@@ -1391,7 +1396,7 @@ let postGameOverlayPending=false;
 
 function loadLocalLeaderboard(){
   try{
-    const raw=localStorage.getItem('2048_local_lb');
+    const raw=localStorage.getItem(lsKey('2048_local_lb'));
     const data=raw?JSON.parse(raw):[];
     return Array.isArray(data)?data:[];
   }catch(e){return [];}
@@ -1408,7 +1413,7 @@ function saveLocalLeaderboardEntry(sc){
       rows.push({userId:LB_USER_ID,name:LB_USER_NAME,score:Number(sc)||0});
     }
     rows.sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0));
-    localStorage.setItem('2048_local_lb', JSON.stringify(rows.slice(0,50)));
+    localStorage.setItem(lsKey('2048_local_lb'), JSON.stringify(rows.slice(0,50)));
   }catch(e){}
 }
 function mergeLeaderboardRows(remoteRows, localRows){
@@ -1585,7 +1590,7 @@ function addDays(dateStr, days){
 }
 function loadDailyState(){
   try{
-    const raw = localStorage.getItem('2048_daily_bonus_v1');
+    const raw = localStorage.getItem(lsKey('2048_daily_bonus_v1'));
     if(raw){
       const parsed = JSON.parse(raw);
       return {
@@ -1598,7 +1603,7 @@ function loadDailyState(){
   return {streakIndex:0,lastClaimDate:'',claimedToday:false};
 }
 function saveDailyState(state){
-  try{ localStorage.setItem('2048_daily_bonus_v1', JSON.stringify(state)); }catch(e){}
+  try{ localStorage.setItem(lsKey('2048_daily_bonus_v1'), JSON.stringify(state)); }catch(e){}
 }
 function getDailyStatus(){
   const state = loadDailyState();
@@ -1815,10 +1820,10 @@ async function claimDailyReward(multiplier=1){
 
 // ── GEMS PERSISTENCE (never reset, paid currency) ─────
 function loadGems(){
-  try{const v=localStorage.getItem('2048_gems');return v?parseInt(v):0;}catch(e){return 0;}
+  try{const v=localStorage.getItem(lsKey('2048_gems'));return v?parseInt(v):0;}catch(e){return 0;}
 }
 function saveGems(val){
-  try{localStorage.setItem('2048_gems',String(val));}catch(e){}
+  try{localStorage.setItem(lsKey('2048_gems'),String(val));}catch(e){}
 }
 
 async function syncGemsFromServer() {
@@ -1891,15 +1896,15 @@ async function loadBestFromServer(){
     const data=await res.json();
     if(data.success&&data.bestScore>0)return data.bestScore;
   }catch(e){console.error(e);}
-  const local=localStorage.getItem("2048_best");
+  const local=localStorage.getItem(lsKey("2048_best"));
   return local?parseInt(local):0;
 }
 function loadBest(){
-  const local=localStorage.getItem("2048_best");
+  const local=localStorage.getItem(lsKey("2048_best"));
   return local?parseInt(local):0;
 }
 function saveBest(val){
-  try{localStorage.setItem("2048_best",String(val));}catch(e){}
+  try{localStorage.setItem(lsKey("2048_best"),String(val));}catch(e){}
 }
 
 async function syncBestScore() {
@@ -1940,13 +1945,13 @@ function saveGame(){
       currentVal,best,prevPool,activePiece,pendingThrowsAd,pendingLastChance,pendingFreePower,pendingFinalGameOver,lastChanceUsed,lastChanceFree
     };
 
-    localStorage.setItem('2048_save',JSON.stringify(payload));
+    localStorage.setItem(lsKey('2048_save'),JSON.stringify(payload));
     saveGameToServer(payload);
   }catch(e){}
 }
 function loadGame(){
   try{
-    const s=localStorage.getItem('2048_save');
+    const s=localStorage.getItem(lsKey('2048_save'));
     if(!s)return false;
     const d=JSON.parse(s);
     if(!d.grid||!d.grid.length)return false;
@@ -1964,7 +1969,7 @@ function loadGame(){
     return true;
   }catch(e){return false;}
 }
-function clearSave(){try{localStorage.removeItem('2048_save');}catch(e){}}
+function clearSave(){try{localStorage.removeItem(lsKey('2048_save'));}catch(e){}}
 
 async function saveGameToServer(state){
   if(!TG_USER || !TG_USER.id) return;
@@ -2066,7 +2071,7 @@ function savePendingThrowsState(){
       grid,score,throws,chainDepth,currentVal,best,prevPool,activePiece,pendingThrowsAd:true,pendingLastChance,pendingFreePower,pendingFinalGameOver,lastChanceUsed,lastChanceFree
     };
 
-    localStorage.setItem('2048_save',JSON.stringify(payload));
+    localStorage.setItem(lsKey('2048_save'),JSON.stringify(payload));
     saveGameToServer(payload);
   }catch(e){}
 }
@@ -2290,7 +2295,7 @@ async function initGame(){
   if(serverState){
     loaded = applyLoadedGameState(serverState);
     if(loaded){
-      try{ localStorage.setItem('2048_save', JSON.stringify(serverState)); }catch(e){}
+      try{ localStorage.setItem(lsKey('2048_save'), JSON.stringify(serverState)); }catch(e){}
     }
   }
 
@@ -2618,7 +2623,7 @@ function showTrueGameOver(){
   pendingFreePower=null;
   lastChanceFree=false;
   try{
-    localStorage.setItem('2048_save', JSON.stringify({
+    localStorage.setItem(lsKey('2048_save'), JSON.stringify({
       grid,score,throws,chainDepth,currentVal,best,prevPool,
       activePiece:null,
       pendingThrowsAd:false,
@@ -3096,9 +3101,9 @@ const SHOP_ITEMS=[
 ];
 
 // first_buy flag — localStorage is fast local cache; server KV is source of truth for cross-device sync
-function isFirstPurchase(){try{return!localStorage.getItem('2048_first_buy');}catch(e){return true;}}
+function isFirstPurchase(){try{return!localStorage.getItem(lsKey('2048_first_buy'));}catch(e){return true;}}
 function markFirstPurchase(){
-  try{localStorage.setItem('2048_first_buy','1');}catch(e){}
+  try{localStorage.setItem(lsKey('2048_first_buy'),'1');}catch(e){}
   if(TG_USER&&TG_USER.id){
     fetch('/api/first-buy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:String(TG_USER.id)})}).catch(()=>{});
   }
@@ -3109,7 +3114,7 @@ async function syncFirstPurchaseFromServer(){
     const res=await fetch('/api/first-buy?userId='+encodeURIComponent(String(TG_USER.id)));
     const data=await res.json();
     if(data&&data.success&&data.used){
-      try{localStorage.setItem('2048_first_buy','1');}catch(e){}
+      try{localStorage.setItem(lsKey('2048_first_buy'),'1');}catch(e){}
     }
   }catch(e){}
 }
@@ -3397,7 +3402,7 @@ function showOnboarding(){
 function dismissOnboarding(){
   var ov = document.getElementById('onboarding-overlay');
   if(ov) ov.classList.remove('show');
-  try{ localStorage.setItem('2048_onboarded','1'); }catch(_){}
+  try{ localStorage.setItem(lsKey('2048_onboarded'),'1'); }catch(_){}
 }
 
 function onboardingNext(){
@@ -3438,7 +3443,7 @@ function _fillObTexts(){
 // Trigger after layout settles
 setTimeout(function(){
   try{
-    if(!localStorage.getItem('2048_onboarded')){
+    if(!localStorage.getItem(lsKey('2048_onboarded'))){
       _fillObTexts();
       showOnboarding();
     }
