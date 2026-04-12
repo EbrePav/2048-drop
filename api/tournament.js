@@ -3,7 +3,7 @@ import { verifyInitData } from './_verify.js';
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'drop2048admin';
 
-const MAX_SCORE = 10_000_000;
+const MAX_SCORE = 1_000_000_000;
 
 // Tournament runs Mon–Sat, Sunday = award day
 // Key: tournament:YYYY-WNN (ISO week of the competition Mon-Sat)

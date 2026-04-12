@@ -3,7 +3,7 @@ import { verifyInitData } from './_verify.js';
 
 // Theoretical max: 5 cols × 8 rows, each cell 32768, chain bonuses ~3x → ~4M
 // Allow generous headroom, reject obvious cheats
-const MAX_SCORE = 10_000_000;
+const MAX_SCORE = 1_000_000_000;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

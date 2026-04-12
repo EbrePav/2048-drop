@@ -2338,8 +2338,21 @@ function burnObsoleteTiles(cb){
 function gridMax(){let m=0;grid.forEach(r=>r.forEach(v=>{if(v>m)m=v;}));return m;}
 function randVal(){const p=getPool(gridMax());return p[Math.floor(Math.random()*p.length)];}
 function mRes(v,n){return v*Math.pow(2,n-1);}
-const TCL={2:{bg:'#7ec8e3',fg:'#1a2a3a'},4:{bg:'#f5a623',fg:'#fff'},8:{bg:'#4caf50',fg:'#fff'},16:{bg:'#f06292',fg:'#fff'},32:{bg:'#7e57c2',fg:'#fff'},64:{bg:'#29b6f6',fg:'#fff'},128:{bg:'#e53935',fg:'#fff'},256:{bg:'#ff7043',fg:'#fff'},512:{bg:'#00897b',fg:'#fff'},1024:{bg:'#3949ab',fg:'#fff'},2048:{bg:'#f9a825',fg:'#222'},4096:{bg:'#ad1457',fg:'#fff'},8192:{bg:'#558b2f',fg:'#fff'},16384:{bg:'#0277bd',fg:'#fff'},32768:{bg:'#6a1b9a',fg:'#fff'},65536:{bg:'#c62828',fg:'#fff'},131072:{bg:'#ef6c00',fg:'#fff'},262144:{bg:'#2e7d32',fg:'#fff'},524288:{bg:'#1565c0',fg:'#fff'},1048576:{bg:'#880e4f',fg:'#fff'},2097152:{bg:'#4a148c',fg:'#fff'},4194304:{bg:'#bf360c',fg:'#fff'}};
-function tc(v){return TCL[v]||{bg:'#37474f',fg:'#fff'};}
+const TCL_CYCLE=[
+  {bg:'#7ec8e3',fg:'#1a2a3a'},{bg:'#f5a623',fg:'#fff'},{bg:'#4caf50',fg:'#fff'},
+  {bg:'#f06292',fg:'#fff'},{bg:'#7e57c2',fg:'#fff'},{bg:'#29b6f6',fg:'#fff'},
+  {bg:'#e53935',fg:'#fff'},{bg:'#ff7043',fg:'#fff'},{bg:'#00897b',fg:'#fff'},
+  {bg:'#3949ab',fg:'#fff'},{bg:'#f9a825',fg:'#222'},{bg:'#ad1457',fg:'#fff'},
+  {bg:'#558b2f',fg:'#fff'},{bg:'#0277bd',fg:'#fff'},{bg:'#6a1b9a',fg:'#fff'},
+  {bg:'#c62828',fg:'#fff'},{bg:'#ef6c00',fg:'#fff'},{bg:'#2e7d32',fg:'#fff'},
+  {bg:'#1565c0',fg:'#fff'},{bg:'#880e4f',fg:'#fff'},{bg:'#4a148c',fg:'#fff'},
+  {bg:'#bf360c',fg:'#fff'}
+];
+function tc(v){
+  if(!v)return{bg:'#37474f',fg:'#fff'};
+  const idx=Math.round(Math.log2(v))-1;
+  return TCL_CYCLE[((idx%TCL_CYCLE.length)+TCL_CYCLE.length)%TCL_CYCLE.length];
+}
 
 let grid,falling,currentVal,score,best=0,gameOver,paused;
 let throws,gems;
