@@ -950,25 +950,18 @@ async function shareGame(){
   // Path A: WebApp.shareMessage — native Telegram chat picker (Telegram 8.0+)
   if(tg && typeof tg.shareMessage === 'function'){
     try{
-      showToast('⏳ preparing share...');
       const res = await fetch('/api/share', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({...body, mode:'prepared'})
       });
       const data = await res.json();
-      showToast('API: ' + JSON.stringify(data).slice(0,80));
       if(data.success && data.id){
         tg.shareMessage(data.id, (sent) => {
           if(sent) showToast('✅ ' + i18n('share_sent'));
         });
         return;
       }
-    }catch(e){
-      showToast('ERR: ' + e.message);
-      console.warn('shareMessage path failed:', e);
-    }
-  } else {
-    showToast('shareMessage: ' + (tg ? typeof tg.shareMessage : 'no tg'));
+    }catch(e){ console.warn('shareMessage path failed:', e); }
   }
 
   // Path B: bot sends photo+button directly to user → they forward it
