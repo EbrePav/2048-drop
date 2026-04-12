@@ -40,8 +40,8 @@ export default async function handler(req, res) {
 
     const scoreFormatted = Number(score).toLocaleString('en');
     const caption =
-      `🏆 Мой рекорд в 2048 Drop: <b>${scoreFormatted}</b>\n` +
-      `Сможешь побить? 🎮`;
+      `🏆 My record in 2048 Drop: <b>${scoreFormatted}</b>\n` +
+      `Can you beat it? 🎮`;
 
     const reply_markup = {
       inline_keyboard: [[
