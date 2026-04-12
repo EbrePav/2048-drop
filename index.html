@@ -372,6 +372,54 @@ html.tg-layout-ready #app{ opacity:1; transition:opacity .12s ease; }
 .ob-btn-next{background:linear-gradient(135deg,#7e57c2,#29b6f6);color:#fff;border:none;border-radius:40px;padding:11px 28px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s,transform .15s;letter-spacing:.1px;}
 .ob-btn-next:hover{opacity:.9;transform:scale(1.03);}
 
+/* ── TOURNAMENT ─────────────────────────────────────────── */
+#tournament-tab{
+  position:fixed;right:6px;top:50%;transform:translateY(-50%);
+  z-index:90;display:flex;flex-direction:column;align-items:center;
+  cursor:pointer;gap:3px;-webkit-tap-highlight-color:transparent;
+}
+#tournament-tab img{width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));}
+#tournament-timer{font-size:10px;font-weight:700;color:#fff;text-align:center;
+  background:rgba(0,0,0,.55);border-radius:6px;padding:2px 5px;line-height:1.3;
+  text-shadow:0 1px 2px rgba(0,0,0,.8);white-space:nowrap;}
+#tournament-overlay{display:none;position:fixed;inset:0;z-index:500;
+  background:rgba(7,10,18,0.98);backdrop-filter:blur(8px);
+  flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:16px;}
+#tournament-overlay.show{display:flex;}
+#tournament-card{background:linear-gradient(160deg,#151c2e,#0d1420);
+  border:1px solid rgba(255,255,255,0.10);border-radius:24px;
+  padding:24px 20px 20px;max-width:360px;width:100%;
+  box-shadow:0 24px 60px rgba(0,0,0,0.6);max-height:90vh;overflow-y:auto;}
+#tournament-card::-webkit-scrollbar{width:0;}
+.trn-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.trn-title{font-size:18px;font-weight:800;color:#fff;}
+.trn-close{background:none;border:none;color:rgba(255,255,255,.5);font-size:22px;cursor:pointer;padding:4px 8px;font-family:inherit;}
+.trn-timer-big{text-align:center;font-size:13px;color:rgba(255,255,255,.6);margin-bottom:16px;}
+.trn-timer-big span{color:#29b6f6;font-weight:700;}
+.trn-award-banner{background:linear-gradient(135deg,#7e57c2,#29b6f6);border-radius:16px;
+  padding:16px;text-align:center;margin-bottom:16px;}
+.trn-award-banner h2{font-size:20px;font-weight:800;color:#fff;margin-bottom:4px;}
+.trn-award-banner p{font-size:13px;color:rgba(255,255,255,.85);}
+.trn-prize-note{display:flex;align-items:center;justify-content:center;gap:6px;
+  font-size:12px;color:rgba(255,255,255,.5);margin-bottom:14px;text-align:center;}
+.trn-list{display:flex;flex-direction:column;gap:6px;}
+.trn-row{display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:10px;background:rgba(255,255,255,.05);}
+.trn-row.me{background:rgba(41,182,246,.18);border:1px solid rgba(41,182,246,.4);}
+.trn-row.top1{background:rgba(249,168,37,.12);border:1px solid rgba(249,168,37,.35);}
+.trn-row.top2{background:rgba(176,190,197,.10);border:1px solid rgba(176,190,197,.3);}
+.trn-row.top3{background:rgba(255,112,67,.10);border:1px solid rgba(255,112,67,.25);}
+.trn-rank{font-size:16px;min-width:28px;text-align:center;}
+.trn-name{font-size:13px;color:#fff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.trn-score{font-size:13px;font-weight:700;color:#fff;}
+.trn-claim-btn{display:block;width:100%;margin-top:16px;padding:13px;
+  background:linear-gradient(135deg,#f9a825,#ff6f00);color:#fff;
+  border:none;border-radius:40px;font-size:15px;font-weight:800;
+  cursor:pointer;font-family:inherit;text-align:center;}
+.trn-claim-btn:active{opacity:.85;}
+.trn-empty{text-align:center;color:rgba(255,255,255,.4);font-size:14px;padding:24px 0;}
+
 /* Landscape: show rotate message, hide game — mobile only, not desktop/MacBook */
 @media (orientation: landscape){
   html:not(.macbook-tg) #app{ display:none !important; }
@@ -760,6 +808,30 @@ html.macbook-tg .daily-bonus-icon{
   </div>
 </div>
 <div id="toast"></div>
+
+<!-- TOURNAMENT TAB -->
+<div id="tournament-tab" onclick="openTournament()">
+  <img src="/tournament-icon.png" alt="Tournament">
+  <div id="tournament-timer">—</div>
+</div>
+
+<!-- TOURNAMENT OVERLAY -->
+<div id="tournament-overlay">
+  <div id="tournament-card">
+    <div class="trn-header">
+      <div class="trn-title" id="trn-title-text"></div>
+      <button class="trn-close" onclick="closeTournament()">✕</button>
+    </div>
+    <div class="trn-timer-big" id="trn-timer-big"></div>
+    <div id="trn-award-banner" class="trn-award-banner" style="display:none;">
+      <h2 id="trn-congrats-text"></h2>
+      <p id="trn-congrats-sub-text"></p>
+    </div>
+    <div class="trn-prize-note" id="trn-prize-note">🎁 <span id="trn-prize-note-text"></span></div>
+    <div class="trn-list" id="trn-list"></div>
+    <button class="trn-claim-btn" id="trn-claim-btn" style="display:none;" onclick="claimTournamentReward()"></button>
+  </div>
+</div>
 
 <!-- ONBOARDING OVERLAY -->
 <div id="onboarding-overlay">
@@ -1208,6 +1280,17 @@ const I18N = {
     ob_done: 'Play!',
     share_sent: 'Shared!',
     share_bot_sent: 'Message sent to bot — forward it to friends!',
+    trn_title: 'Weekly Tournament',
+    trn_ends_in: 'Ends in',
+    trn_award_day: 'Award Day',
+    trn_congrats: '🎉 Congratulations to the winners!',
+    trn_congrats_sub: 'This week\'s top players win a Telegram Gift',
+    trn_new_week: 'New tournament starts in',
+    trn_prize_note: 'Top 2 players win a Telegram Gift 🎁',
+    trn_claim: '🎁 Claim your prize',
+    trn_empty: 'No scores yet this week',
+    trn_close: 'Close',
+    trn_your_rank: 'Your rank',
     ob_step1_title: 'Drop tiles',
     ob_step1_desc: 'Tap any column to drop the current tile. It falls to the lowest available row.',
     ob_step2_title: 'Tiles merge',
@@ -1310,6 +1393,17 @@ const I18N = {
     ob_done: 'Играть!',
     share_sent: 'Поделился!',
     share_bot_sent: 'Сообщение отправлено в бот — перешли друзьям!',
+    trn_title: 'Недельный турнир',
+    trn_ends_in: 'Заканчивается через',
+    trn_award_day: 'День награждения',
+    trn_congrats: '🎉 Поздравляем победителей!',
+    trn_congrats_sub: 'Топ игроки этой недели выигрывают Telegram Gift',
+    trn_new_week: 'Новый турнир через',
+    trn_prize_note: 'Топ-2 игрока выиграют Telegram Gift 🎁',
+    trn_claim: '🎁 Забрать приз',
+    trn_empty: 'Пока нет результатов этой недели',
+    trn_close: 'Закрыть',
+    trn_your_rank: 'Ваш ранг',
     ob_step1_title: 'Бросай тайлы',
     ob_step1_desc: 'Нажми на любой столбец — тайл упадёт на нижнюю свободную позицию.',
     ob_step2_title: 'Тайлы сливаются',
@@ -1413,6 +1507,17 @@ const I18N = {
     ob_done: 'Грати!',
     share_sent: 'Поділився!',
     share_bot_sent: 'Повідомлення надіслано в бот — перешли друзям!',
+    trn_title: 'Тижневий турнір',
+    trn_ends_in: 'Закінчується через',
+    trn_award_day: 'День нагородження',
+    trn_congrats: '🎉 Вітаємо переможців!',
+    trn_congrats_sub: 'Топ гравці цього тижня виграють Telegram Gift',
+    trn_new_week: 'Новий турнір через',
+    trn_prize_note: 'Топ-2 гравця виграють Telegram Gift 🎁',
+    trn_claim: '🎁 Забрати приз',
+    trn_empty: 'Поки немає результатів цього тижня',
+    trn_close: 'Закрити',
+    trn_your_rank: 'Ваш ранг',
     ob_step1_title: 'Кидай тайли',
     ob_step1_desc: 'Торкнись будь-якого стовпця — тайл впаде на нижню вільну позицію.',
     ob_step2_title: 'Тайли зливаються',
@@ -1954,6 +2059,36 @@ function loadBest(){
 }
 function saveBest(val){
   try{localStorage.setItem(lsKey("2048_best"),String(val));}catch(e){}
+  // Submit to leaderboard + tournament immediately when beating personal best
+  _scheduleScoreSubmit(val);
+}
+
+var _scoreSubmitTimer = null;
+function _scheduleScoreSubmit(score) {
+  clearTimeout(_scoreSubmitTimer);
+  _scoreSubmitTimer = setTimeout(function(){
+    if(TG_USER && TG_USER.id){
+      submitScoreToServer(score);
+      scheduleTournamentSubmit(score);
+    }
+  }, 3000);
+}
+
+async function submitScoreToServer(score) {
+  if(!TG_USER || !TG_USER.id || !score) return;
+  try{
+    await fetch('/api/leaderboard', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        userId: String(TG_USER.id),
+        score: score,
+        name: MY_NAME,
+        username: TG_USER.username || '',
+        initData: (tg && tg.initData) || ''
+      })
+    });
+  }catch(e){ console.warn('score submit failed:', e); }
 }
 
 async function syncBestScore() {
@@ -3440,6 +3575,178 @@ function applyI18n(){
 
 if(TG_USER){
   syncGemsFromServer();
+}
+
+// Submit score when user closes/hides the app
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'hidden' && TG_USER && TG_USER.id && allTimeBest > 0){
+    submitScoreToServer(allTimeBest);
+    _submitTournamentScore(allTimeBest);
+  }
+});
+
+// Load tournament on startup
+setTimeout(function(){ loadTournament().then(startTournamentTimer); }, 1200);
+
+// ── TOURNAMENT ───────────────────────────────────────────
+var _trnData = null;
+var _trnTimerInterval = null;
+
+async function loadTournament() {
+  try {
+    const uid = TG_USER ? TG_USER.id : '';
+    const res = await fetch('/api/tournament' + (uid ? '?userId=' + uid : ''));
+    _trnData = await res.json();
+    _updateTournamentTab();
+  } catch(e) { console.warn('tournament load failed:', e); }
+}
+
+function _formatCountdown(seconds) {
+  if (seconds <= 0) return '0s';
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (d > 0) return d + 'd ' + h + 'h';
+  if (h > 0) return h + 'h ' + m + 'm';
+  return m + 'm ' + s + 's';
+}
+
+function _updateTournamentTab() {
+  if (!_trnData) return;
+  var tab = document.getElementById('tournament-timer');
+  if (!tab) return;
+  var secs = _trnData.isAwardDay ? _trnData.secondsUntilNewWeek : _trnData.secondsUntilAward;
+  // Decrement locally each second
+  tab.textContent = _trnData.isAwardDay ? '🏆' : _formatCountdown(secs);
+}
+
+function startTournamentTimer() {
+  if (_trnTimerInterval) clearInterval(_trnTimerInterval);
+  _trnTimerInterval = setInterval(function() {
+    if (!_trnData) return;
+    var key = _trnData.isAwardDay ? 'secondsUntilNewWeek' : 'secondsUntilAward';
+    if (_trnData[key] > 0) _trnData[key]--;
+    _updateTournamentTab();
+    var bigTimer = document.getElementById('trn-timer-big');
+    if (bigTimer && document.getElementById('tournament-overlay').classList.contains('show')) {
+      _renderTournamentTimer(bigTimer);
+    }
+  }, 1000);
+}
+
+function _renderTournamentTimer(el) {
+  if (!_trnData || !el) return;
+  if (_trnData.isAwardDay) {
+    el.innerHTML = i18n('trn_new_week') + ' <span>' + _formatCountdown(_trnData.secondsUntilNewWeek) + '</span>';
+  } else {
+    el.innerHTML = i18n('trn_ends_in') + ' <span>' + _formatCountdown(_trnData.secondsUntilAward) + '</span>';
+  }
+}
+
+function openTournament() {
+  blockBar();
+  var ov = document.getElementById('tournament-overlay');
+  ov.classList.add('show');
+  _renderTournamentOverlay();
+  loadTournament().then(_renderTournamentOverlay);
+}
+
+function closeTournament() {
+  document.getElementById('tournament-overlay').classList.remove('show');
+  unblockBar();
+}
+
+function _renderTournamentOverlay() {
+  if (!_trnData) return;
+  var myId = TG_USER ? String(TG_USER.id) : null;
+
+  // Title
+  document.getElementById('trn-title-text').textContent =
+    _trnData.isAwardDay ? i18n('trn_award_day') : i18n('trn_title');
+
+  // Timer
+  _renderTournamentTimer(document.getElementById('trn-timer-big'));
+
+  // Award banner
+  var banner = document.getElementById('trn-award-banner');
+  var prizeNote = document.getElementById('trn-prize-note');
+  if (_trnData.isAwardDay) {
+    banner.style.display = 'block';
+    prizeNote.style.display = 'none';
+    document.getElementById('trn-congrats-text').textContent = i18n('trn_congrats');
+    document.getElementById('trn-congrats-sub-text').textContent = i18n('trn_congrats_sub');
+  } else {
+    banner.style.display = 'none';
+    prizeNote.style.display = 'flex';
+    document.getElementById('trn-prize-note-text').textContent = i18n('trn_prize_note');
+  }
+
+  // Leaderboard
+  var list = document.getElementById('trn-list');
+  var players = (_trnData.players || []).slice(0, _trnData.isAwardDay ? 3 : 50);
+  if (players.length === 0) {
+    list.innerHTML = '<div class="trn-empty">' + i18n('trn_empty') + '</div>';
+  } else {
+    var medals = ['🥇','🥈','🥉'];
+    list.innerHTML = players.map(function(p, i) {
+      var isMe = myId && String(p.userId) === myId;
+      var cls = 'trn-row' +
+        (i===0?' top1':i===1?' top2':i===2?' top3':'') +
+        (isMe?' me':'');
+      var rank = i < 3 ? medals[i] : (i+1);
+      return '<div class="' + cls + '">' +
+        '<span class="trn-rank">' + rank + '</span>' +
+        '<span class="trn-name">' + (p.name||'Player') + '</span>' +
+        '<span class="trn-score">' + formatNum(Number(p.score)) + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  // Claim button — only if this user has an activated reward
+  var claimBtn = document.getElementById('trn-claim-btn');
+  if (_trnData.reward && _trnData.reward.link) {
+    claimBtn.style.display = 'block';
+    claimBtn.textContent = i18n('trn_claim');
+  } else {
+    claimBtn.style.display = 'none';
+  }
+}
+
+function claimTournamentReward() {
+  if (!_trnData || !_trnData.reward || !_trnData.reward.link) return;
+  if (tg && tg.openLink) {
+    tg.openLink(_trnData.reward.link);
+  } else {
+    window.open(_trnData.reward.link, '_blank');
+  }
+}
+
+// Submit score to tournament (debounced, only when beating personal best)
+var _trnSubmitTimer = null;
+function scheduleTournamentSubmit(score) {
+  if (!TG_USER || !TG_USER.id) return;
+  clearTimeout(_trnSubmitTimer);
+  _trnSubmitTimer = setTimeout(function() {
+    _submitTournamentScore(score);
+  }, 3000);
+}
+
+async function _submitTournamentScore(score) {
+  if (!TG_USER || !TG_USER.id || !score) return;
+  try {
+    await fetch('/api/tournament', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: String(TG_USER.id),
+        score: score,
+        name: MY_NAME,
+        username: TG_USER.username || '',
+        initData: (tg && tg.initData) || ''
+      })
+    });
+  } catch(e) { console.warn('tournament submit failed:', e); }
 }
 
 // ── ONBOARDING ───────────────────────────────────────────
