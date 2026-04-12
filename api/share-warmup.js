@@ -1,54 +1,49 @@
 import { kv } from '@vercel/kv';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const PHOTO_URL = 'https://raw.githubusercontent.com/EbrePav/2048-drop/main/share.jpg';
 
-async function tgApi(method, body) {
-  const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
+// Send photo as binary upload (not URL) — bypasses Telegram's URL fetching
+async function sendPhotoAsFile(chatId) {
+  // Read the actual file from the filesystem
+  const filePath = join(process.cwd(), 'share.jpg');
+  const fileBuffer = readFileSync(filePath);
+
+  const form = new FormData();
+  form.append('chat_id', String(chatId));
+  form.append('caption', '✅ Share image cached!');
+  form.append('disable_notification', 'true');
+  form.append('photo', new Blob([fileBuffer], { type: 'image/jpeg' }), 'share.jpg');
+
+  const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body: form
   });
   return res.json();
 }
 
-// Call once: GET /api/share-warmup?userId=YOUR_TELEGRAM_ID
-// Sends the share image to you, caches the file_id, deletes the message.
-// After this all shares will show the photo correctly.
+// Call once: GET /api/share-warmup?userId=YOUR_TELEGRAM_ID&secret=drop2048
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   const { userId, secret } = req.query;
 
-  if (!userId) {
-    return res.status(400).json({ error: 'Missing userId' });
-  }
-
-  // Basic protection — pass ?secret=drop2048 to call this endpoint
-  if (secret !== 'drop2048') {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
+  if (!userId) return res.status(400).json({ error: 'Missing userId' });
+  if (secret !== 'drop2048') return res.status(403).json({ error: 'Forbidden' });
 
   try {
-    // Check if already cached
     const existing = await kv.get('share_photo_file_id');
     if (existing) {
       return res.status(200).json({ success: true, cached: true, file_id: existing });
     }
 
-    // Send photo to the user to get a Telegram-hosted file_id
-    const sendRes = await tgApi('sendPhoto', {
-      chat_id: Number(userId),
-      photo: PHOTO_URL,
-      caption: '✅ Share image cached! You can delete this message.',
-      disable_notification: true
-    });
+    const sendRes = await sendPhotoAsFile(Number(userId));
 
     if (!sendRes.ok) {
       return res.status(500).json({
         success: false,
-        error: sendRes.description,
-        hint: 'Make sure you have sent /start to the bot first'
+        error: sendRes.description
       });
     }
 
@@ -59,9 +54,8 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
-      cached: false,
       file_id: fileId,
-      message: 'File ID cached successfully! All shares will now show the photo.'
+      message: 'Cached! All shares will now show the photo.'
     });
 
   } catch (err) {
