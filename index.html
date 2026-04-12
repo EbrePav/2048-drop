@@ -217,6 +217,7 @@ body.free-power-focus .pwr.active .pwr-cost{
 .shop-item{transition:background 0.15s,transform 0.1s;}
 .shop-item:hover{background:#243447!important;transform:scale(1.02);}
 .shop-item:active{transform:scale(0.98);}
+.shop-item.shop-hover{background:#243447!important;transform:scale(1.02);box-shadow:0 0 0 2px #29b6f6;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 
@@ -3350,6 +3351,32 @@ function renderShop(){
     div.addEventListener('click',()=>buyGems(item,actualStars));
     container.appendChild(div);
   });
+
+  // Swipe-to-highlight: touch and slide to select item
+  if(!container._shopSwipeInited){
+    container._shopSwipeInited=true;
+    let _dragItem=null,_moved=false;
+    function _shopClear(){
+      container.querySelectorAll('.shop-item').forEach(i=>i.classList.remove('shop-hover'));
+      _dragItem=null;
+    }
+    function _shopTrack(clientX,clientY){
+      const el=document.elementFromPoint(clientX,clientY);
+      const item=el&&el.closest('.shop-item');
+      if(item!==_dragItem){_shopClear();_dragItem=item;if(item)item.classList.add('shop-hover');}
+    }
+    container.addEventListener('touchstart',e=>{_moved=false;},{passive:true});
+    container.addEventListener('touchmove',e=>{
+      _moved=true;
+      _shopTrack(e.touches[0].clientX,e.touches[0].clientY);
+    },{passive:true});
+    container.addEventListener('touchend',e=>{
+      if(_moved&&_dragItem){const t=_dragItem;_shopClear();t.click();}
+      else _shopClear();
+      _moved=false;
+    });
+    container.addEventListener('touchcancel',()=>{_shopClear();_moved=false;});
+  }
 }
 
 const BACKEND_URL = '';
