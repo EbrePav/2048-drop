@@ -934,7 +934,33 @@ let adsController = null;
 let adsLCController = null;
 let adsDailyRewardController = null;
 let adsRestartInterstitialController = null;
-function shareGame(){
+async function shareGame(){
+  // Modern path: savePreparedInlineMessage + WebApp.shareMessage
+  // Shows native Telegram chat picker with photo + "▶️ Играть" button
+  if(tg && tg.shareMessage && TG_USER && TG_USER.id){
+    try{
+      const res = await fetch('/api/share', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          userId: String(TG_USER.id),
+          score: allTimeBest,
+          initData: (tg && tg.initData) || ''
+        })
+      });
+      const data = await res.json();
+      if(data.success && data.id){
+        tg.shareMessage(data.id, (sent) => {
+          if(sent) showToast('✅ ' + i18n('share_sent'));
+        });
+        return;
+      }
+    }catch(e){
+      console.warn('shareMessage failed, falling back:', e);
+    }
+  }
+
+  // Fallback: classic Telegram share link
   const score = formatNum(allTimeBest);
   const text = "🎮 2048 Drop — мой рекорд: " + score + "!\n\nПопробуй побить 👉 @Drop2048bot";
   if(tg && tg.openTelegramLink){
@@ -1165,6 +1191,7 @@ const I18N = {
     ob_skip: 'Skip',
     ob_next: 'Next',
     ob_done: 'Play!',
+    share_sent: 'Shared!',
     ob_step1_title: 'Drop tiles',
     ob_step1_desc: 'Tap any column to drop the current tile. It falls to the lowest available row.',
     ob_step2_title: 'Tiles merge',
@@ -1265,6 +1292,7 @@ const I18N = {
     ob_skip: 'Пропустить',
     ob_next: 'Далее',
     ob_done: 'Играть!',
+    share_sent: 'Поделился!',
     ob_step1_title: 'Бросай тайлы',
     ob_step1_desc: 'Нажми на любой столбец — тайл упадёт на нижнюю свободную позицию.',
     ob_step2_title: 'Тайлы сливаются',
@@ -1366,6 +1394,7 @@ const I18N = {
     ob_skip: 'Пропустити',
     ob_next: 'Далі',
     ob_done: 'Грати!',
+    share_sent: 'Поділився!',
     ob_step1_title: 'Кидай тайли',
     ob_step1_desc: 'Торкнись будь-якого стовпця — тайл впаде на нижню вільну позицію.',
     ob_step2_title: 'Тайли зливаються',
