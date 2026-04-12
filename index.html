@@ -381,7 +381,7 @@ html.tg-layout-ready #app{ opacity:1; transition:opacity .12s ease; }
 #tournament-tab img{width:58px;height:58px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,.6));}
 #tournament-timer{font-size:10px;font-weight:700;color:#fff;text-align:center;
   background:rgba(0,0,0,.55);border-radius:6px;padding:2px 5px;line-height:1.3;
-  text-shadow:0 1px 2px rgba(0,0,0,.8);white-space:nowrap;}
+  text-shadow:0 1px 2px rgba(0,0,0,.8);white-space:normal;}
 @keyframes trnShake{
   0%,100%{transform:rotate(0deg);}
   15%{transform:rotate(-12deg);}
@@ -1289,6 +1289,8 @@ const I18N = {
     share_sent: 'Shared!',
     share_bot_sent: 'Message sent to bot — forward it to friends!',
     trn_title: 'Weekly Tournament',
+    trn_tab_label: 'Gift contest',
+    trn_tab_ended: 'Contest<br>ended',
     trn_ends_in: 'Ends in',
     trn_award_day: 'Gifts are on their way... 🎁',
     trn_congrats: '🎉 Congratulations to the winners!',
@@ -1402,6 +1404,8 @@ const I18N = {
     share_sent: 'Поделился!',
     share_bot_sent: 'Сообщение отправлено в бот — перешли друзьям!',
     trn_title: 'Недельный турнир',
+    trn_tab_label: 'Конкурс',
+    trn_tab_ended: 'Конкурс<br>завершён',
     trn_ends_in: 'Заканчивается через',
     trn_award_day: 'Подарки уже в пути... 🎁',
     trn_congrats: '🎉 Поздравляем победителей!',
@@ -1516,12 +1520,14 @@ const I18N = {
     share_sent: 'Поділився!',
     share_bot_sent: 'Повідомлення надіслано в бот — перешли друзям!',
     trn_title: 'Тижневий турнір',
+    trn_tab_label: 'Конкурс',
+    trn_tab_ended: 'Конкурс<br>завершено',
     trn_ends_in: 'Закінчується через',
     trn_award_day: 'Подарунки вже в дорозі... 🎁',
     trn_congrats: '🎉 Вітаємо переможців!',
     trn_congrats_sub: 'Топ гравці цього тижня виграють Telegram Gift',
     trn_new_week: 'Новий турнір через',
-    trn_prize_note: 'Топ переможці цього тижня, які виграли Telegram Gift 🎁',
+    trn_prize_note: 'Топ гравців цього тижня, які виграли Telegram Gift 🎁',
     trn_claim: '🎁 Забрати приз',
     trn_empty: 'Поки немає результатів цього тижня',
     trn_close: 'Закрити',
@@ -3182,7 +3188,7 @@ document.getElementById('ov-btn').addEventListener('click',()=>{
     draw();
   }, ()=>{
     hideLoadingOverlay();
-    document.getElementById('overlay').classList.add('show');
+    document.getElementById('overlay').classList.add('show');blockBar();
     document.getElementById('ov-title').textContent=i18n('throws_over');
     document.getElementById('ov-sub').textContent=i18n('ad_sub');
     document.getElementById('ov-btn').textContent=i18n('watch_ad');
@@ -3635,7 +3641,11 @@ function _updateTournamentTab() {
   if (!tab) return;
   var secs = _trnData.isAwardDay ? _trnData.secondsUntilNewWeek : _trnData.secondsUntilAward;
   // Decrement locally each second
-  tab.textContent = _trnData.isAwardDay ? '🎁' : _formatCountdown(secs);
+  if (_trnData.isAwardDay) {
+    tab.innerHTML = i18n('trn_tab_ended');
+  } else {
+    tab.innerHTML = '<span style="font-size:9px;opacity:0.85;">' + i18n('trn_tab_label') + '</span><br>' + _formatCountdown(secs);
+  }
 }
 
 function startTournamentTimer() {
