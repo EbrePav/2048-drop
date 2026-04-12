@@ -374,8 +374,7 @@ html.tg-layout-ready #app{ opacity:1; transition:opacity .12s ease; }
 
 /* ── TOURNAMENT ─────────────────────────────────────────── */
 #tournament-tab{
-  position:fixed;right:6px;
-  top:calc(var(--content-top, 0px) + 14px);
+  position:absolute;right:-6px;top:6px;
   z-index:90;display:flex;flex-direction:column;align-items:center;
   cursor:pointer;gap:3px;-webkit-tap-highlight-color:transparent;
 }
@@ -395,9 +394,8 @@ html.tg-layout-ready #app{ opacity:1; transition:opacity .12s ease; }
 #tournament-tab.shake img{animation:trnShake .6s ease;}
 #tournament-overlay{display:none;position:fixed;inset:0;z-index:500;
   background:rgba(7,10,18,0.98);backdrop-filter:blur(8px);
-  flex-direction:column;align-items:center;justify-content:flex-start;
-  padding:16px;
-  padding-top:calc(var(--content-top, 0px) + 16px);}
+  flex-direction:column;align-items:center;justify-content:center;
+  padding:calc(var(--content-top, 0px) + 16px) 16px 16px;}
 #tournament-overlay.show{display:flex;}
 #tournament-card{background:linear-gradient(160deg,#151c2e,#0d1420);
   border:1px solid rgba(255,255,255,0.10);border-radius:24px;
@@ -711,6 +709,10 @@ html.macbook-tg .daily-bonus-icon{
   </div>
   <div id="spawn-info"></div>
   <div id="canvas-wrap">
+    <div id="tournament-tab" onclick="openTournament()">
+      <img src="/tournament-icon.png" alt="Tournament">
+      <div id="tournament-timer">—</div>
+    </div>
     <canvas id="c"></canvas>
     <div class="modal" id="overlay">
       <div class="modal-title" id="ov-title">Броски закончились!</div>
@@ -820,12 +822,6 @@ html.macbook-tg .daily-bonus-icon{
   </div>
 </div>
 <div id="toast"></div>
-
-<!-- TOURNAMENT TAB -->
-<div id="tournament-tab" onclick="openTournament()">
-  <img src="/tournament-icon.png" alt="Tournament">
-  <div id="tournament-timer">—</div>
-</div>
 
 <!-- TOURNAMENT OVERLAY -->
 <div id="tournament-overlay">
@@ -1298,7 +1294,7 @@ const I18N = {
     trn_congrats: '🎉 Congratulations to the winners!',
     trn_congrats_sub: 'This week\'s top players win a Telegram Gift',
     trn_new_week: 'New tournament starts in',
-    trn_prize_note: 'Top 2 players win a Telegram Gift 🎁',
+    trn_prize_note: 'Best players of the week win Telegram Gifts 🎁',
     trn_claim: '🎁 Claim your prize',
     trn_empty: 'No scores yet this week',
     trn_close: 'Close',
@@ -1411,7 +1407,7 @@ const I18N = {
     trn_congrats: '🎉 Поздравляем победителей!',
     trn_congrats_sub: 'Топ игроки этой недели выигрывают Telegram Gift',
     trn_new_week: 'Новый турнир через',
-    trn_prize_note: 'Топ-2 игрока выиграют Telegram Gift 🎁',
+    trn_prize_note: 'Лучшие игроки недели выиграют Telegram Gift 🎁',
     trn_claim: '🎁 Забрать приз',
     trn_empty: 'Пока нет результатов этой недели',
     trn_close: 'Закрыть',
@@ -1525,7 +1521,7 @@ const I18N = {
     trn_congrats: '🎉 Вітаємо переможців!',
     trn_congrats_sub: 'Топ гравці цього тижня виграють Telegram Gift',
     trn_new_week: 'Новий турнір через',
-    trn_prize_note: 'Топ-2 гравця виграють Telegram Gift 🎁',
+    trn_prize_note: 'Найкращі гравці тижня виграють Telegram Gift 🎁',
     trn_claim: '🎁 Забрати приз',
     trn_empty: 'Поки немає результатів цього тижня',
     trn_close: 'Закрити',
