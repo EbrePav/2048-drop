@@ -4,8 +4,7 @@ import { verifyInitData } from './_verify.js';
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const BOT_USERNAME = process.env.BOT_USERNAME || 'Drop2048bot';
 
-// GitHub raw URL is always publicly accessible from Telegram servers
-const PHOTO_URL = 'https://raw.githubusercontent.com/EbrePav/2048-drop/main/share.jpg';
+const PHOTO_URL = 'https://2048-drop-nu.vercel.app/share.jpg';
 
 async function tgApi(method, body) {
   const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
