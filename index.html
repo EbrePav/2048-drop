@@ -145,6 +145,8 @@ canvas{display:block;border-radius:12px;-webkit-touch-callout:none;-webkit-user-
 #toast.show{transform:translate(-50%,-50%) scale(1);opacity:1;}
 #bottom-bar.blocked{pointer-events:none;opacity:0.35;filter:grayscale(0.5);}
 #bottom-bar.blocked *{pointer-events:none;}
+#daily-bonus-slot.blocked{pointer-events:none;opacity:0.35;filter:grayscale(0.5);}
+#daily-bonus-slot.blocked *{pointer-events:none;}
 /* focus overlay for free power */
 body.free-power-focus #canvas-wrap::after{
   content:'';
@@ -2224,8 +2226,14 @@ function resize(){
 const GX=(c)=>PAD+c*CS+CS/2;const GY=(r)=>PAD+r*CS+CS/2;
 const TX=(c)=>PAD+c*CS+2;const TY=(r)=>PAD+r*CS+2;const CSZ=()=>CS-4;
 
-function blockBar(){document.getElementById('bottom-bar').classList.add('blocked');}
-function unblockBar(){document.getElementById('bottom-bar').classList.remove('blocked');}
+function blockBar(){
+  document.getElementById('bottom-bar').classList.add('blocked');
+  document.getElementById('daily-bonus-slot').classList.add('blocked');
+}
+function unblockBar(){
+  document.getElementById('bottom-bar').classList.remove('blocked');
+  document.getElementById('daily-bonus-slot').classList.remove('blocked');
+}
 function syncBarState(){
   const modals=['overlay','pause-overlay','confirm-overlay','lb-overlay','daily-overlay','lc-overlay','gameover-overlay','shop-overlay','loading-overlay'];
   const anyVisible=modals.some(id=>{const el=document.getElementById(id);return el&&el.classList.contains('show');});
