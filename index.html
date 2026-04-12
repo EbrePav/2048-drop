@@ -2716,9 +2716,9 @@ function checkAndMerge(newR,newC,cb){
   setTimeout(()=>{
     if(grp.length===2){
       const other=grp.find(([r,c])=>!(r===newR&&c===newC));const[or,oc]=other;
-      // For vertical: upper→lower (fix chain gravity bug). For horizontal: new→old (original).
-      const newIsLower=newR>or;
-      const[flyR,flyC,toR,toC]=newIsLower?[or,oc,newR,newC]:[newR,newC,or,oc];
+      // Vertical: upper→lower. Horizontal: right→left. Result always at lower/left.
+      const shouldSwap=newR>or||(newR===or&&newC<oc);
+      const[flyR,flyC,toR,toC]=shouldSwap?[or,oc,newR,newC]:[newR,newC,or,oc];
       grid[flyR][flyC]=0;
       animFly([{val:v,x:TX(flyC),y:TY(flyR)}],TX(toC),TY(toR),()=>{
         const nv=mRes(v,2);score+=nv;grid[toR][toC]=nv;
