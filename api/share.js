@@ -2,25 +2,10 @@ import { kv } from '@vercel/kv';
 import { verifyInitData } from './_verify.js';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const APP_URL = process.env.APP_URL || 'https://2048-drop-nu.vercel.app';
 const BOT_USERNAME = process.env.BOT_USERNAME || 'Drop2048bot';
 
-// Upload share.jpg to Telegram once, cache file_id in KV
-async function getSharePhotoFileId() {
-  const cached = await kv.get('share_photo_file_id');
-  if (cached) return cached;
-
-  // Upload to a private channel or the bot itself isn't possible without chat_id.
-  // Use a temp sendPhoto to a dummy chat — instead, use sendDocument trick:
-  // send to our own bot storage by using getUpdates or just send to userId later.
-  // For now: return null to fall back to photo_url
-  return null;
-}
-
-// Cache file_id after user's share sends it
-async function cacheFileId(fileId) {
-  await kv.set('share_photo_file_id', fileId, { ex: 60 * 60 * 24 * 30 }); // 30 days
-}
+// GitHub raw URL is always publicly accessible from Telegram servers
+const PHOTO_URL = 'https://raw.githubusercontent.com/EbrePav/2048-drop/main/share.jpg';
 
 async function tgApi(method, body) {
   const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
@@ -66,7 +51,7 @@ export default async function handler(req, res) {
     };
 
     if (mode === 'prepared') {
-      // Try cached file_id first (most reliable for preview)
+      // Try cached Telegram file_id first (most reliable)
       const cachedFileId = await kv.get('share_photo_file_id');
 
       let result;
@@ -80,49 +65,18 @@ export default async function handler(req, res) {
           reply_markup
         };
       } else {
-        // First time: upload image to Telegram by sending to the user,
-        // extract file_id, cache it, then proceed
-        const uploadRes = await tgApi('sendPhoto', {
-          chat_id: Number(userId),
-          photo: `${APP_URL}/share.jpg`,
-          caption: '(uploading share image, one moment...)',
-          disable_notification: true
-        });
-
-        if (uploadRes.ok) {
-          // Get the largest photo size file_id
-          const photos = uploadRes.result.photo;
-          const fileId = photos[photos.length - 1].file_id;
-          await cacheFileId(fileId);
-
-          // Delete the temp upload message
-          await tgApi('deleteMessage', {
-            chat_id: Number(userId),
-            message_id: uploadRes.result.message_id
-          });
-
-          result = {
-            type: 'photo',
-            id: 'share_invite',
-            photo_file_id: fileId,
-            caption,
-            parse_mode: 'HTML',
-            reply_markup
-          };
-        } else {
-          // Fallback to URL if upload fails
-          result = {
-            type: 'photo',
-            id: 'share_invite',
-            photo_url: `${APP_URL}/share.jpg`,
-            thumbnail_url: `${APP_URL}/share.jpg`,
-            photo_width: 1152,
-            photo_height: 768,
-            caption,
-            parse_mode: 'HTML',
-            reply_markup
-          };
-        }
+        // Use GitHub raw URL — publicly accessible by Telegram
+        result = {
+          type: 'photo',
+          id: 'share_invite',
+          photo_url: PHOTO_URL,
+          thumbnail_url: PHOTO_URL,
+          photo_width: 1152,
+          photo_height: 768,
+          caption,
+          parse_mode: 'HTML',
+          reply_markup
+        };
       }
 
       const tgRes = await tgApi('savePreparedInlineMessage', {
@@ -135,8 +89,33 @@ export default async function handler(req, res) {
       });
 
       if (!tgRes.ok) {
-        console.error('savePreparedInlineMessage error:', tgRes);
+        console.error('savePreparedInlineMessage error:', JSON.stringify(tgRes));
         return res.status(500).json({ error: tgRes.description || 'Telegram API error' });
+      }
+
+      // Try to cache file_id from the prepared message for next time
+      // by sending a warmup photo to the user silently
+      if (!cachedFileId) {
+        try {
+          const warmup = await tgApi('sendPhoto', {
+            chat_id: Number(userId),
+            photo: PHOTO_URL,
+            disable_notification: true,
+            caption: '.'
+          });
+          if (warmup.ok && warmup.result.photo) {
+            const fileId = warmup.result.photo[warmup.result.photo.length - 1].file_id;
+            await kv.set('share_photo_file_id', fileId, { ex: 60 * 60 * 24 * 30 });
+            // Clean up the warmup message
+            await tgApi('deleteMessage', {
+              chat_id: Number(userId),
+              message_id: warmup.result.message_id
+            });
+          }
+        } catch (e) {
+          // warmup failed silently — next share will try again
+          console.warn('warmup failed:', e.message);
+        }
       }
 
       return res.status(200).json({ success: true, id: tgRes.result.id });
@@ -145,7 +124,7 @@ export default async function handler(req, res) {
     // Default: send photo directly to user
     const sendRes = await tgApi('sendPhoto', {
       chat_id: Number(userId),
-      photo: `${APP_URL}/share.jpg`,
+      photo: PHOTO_URL,
       caption,
       parse_mode: 'HTML',
       reply_markup
@@ -155,11 +134,10 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: sendRes.description || 'Telegram API error' });
     }
 
-    // Cache file_id from this send too
+    // Cache file_id
     if (sendRes.result && sendRes.result.photo) {
-      const photos = sendRes.result.photo;
-      const fileId = photos[photos.length - 1].file_id;
-      await cacheFileId(fileId);
+      const fileId = sendRes.result.photo[sendRes.result.photo.length - 1].file_id;
+      await kv.set('share_photo_file_id', fileId, { ex: 60 * 60 * 24 * 30 });
     }
 
     return res.status(200).json({ success: true, sent: true });
