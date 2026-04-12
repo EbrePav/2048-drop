@@ -3,7 +3,6 @@ import { verifyInitData } from './_verify.js';
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'drop2048admin';
 
-const MAX_SCORE = 1_000_000_000;
 
 // Tournament runs Mon–Sat, Sunday = award day
 // Key: tournament:YYYY-WNN (ISO week of the competition Mon-Sat)
@@ -112,7 +111,7 @@ export default async function handler(req, res) {
       userId = String(userId);
       score = Number(score);
 
-      if (!Number.isFinite(score) || score < 0 || score > MAX_SCORE) {
+      if (!Number.isFinite(score) || score < 0) {
         return res.status(400).json({ error: 'Invalid score' });
       }
 

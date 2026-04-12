@@ -3,7 +3,6 @@ import { verifyInitData } from './_verify.js';
 
 // Theoretical max: 5 cols × 8 rows, each cell 32768, chain bonuses ~3x → ~4M
 // Allow generous headroom, reject obvious cheats
-const MAX_SCORE = 1_000_000_000;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -42,7 +41,7 @@ export default async function handler(req, res) {
       score = Number(score);
 
       // Reject obviously fake scores
-      if (!Number.isFinite(score) || score < 0 || score > MAX_SCORE) {
+      if (!Number.isFinite(score) || score < 0) {
         return res.status(400).json({ error: 'Invalid score' });
       }
 
