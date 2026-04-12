@@ -1,7 +1,7 @@
 import { kv } from '@vercel/kv';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const PHOTO_URL = 'https://2048-drop-nu.vercel.app/share.jpg';
+const PHOTO_URL = 'https://raw.githubusercontent.com/EbrePav/2048-drop/main/share.jpg';
 
 async function tgApi(method, body) {
   const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
