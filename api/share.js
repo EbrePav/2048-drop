@@ -92,31 +92,6 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: tgRes.description || 'Telegram API error' });
       }
 
-      // Try to cache file_id from the prepared message for next time
-      // by sending a warmup photo to the user silently
-      if (!cachedFileId) {
-        try {
-          const warmup = await tgApi('sendPhoto', {
-            chat_id: Number(userId),
-            photo: PHOTO_URL,
-            disable_notification: true,
-            caption: '.'
-          });
-          if (warmup.ok && warmup.result.photo) {
-            const fileId = warmup.result.photo[warmup.result.photo.length - 1].file_id;
-            await kv.set('share_photo_file_id', fileId, { ex: 60 * 60 * 24 * 30 });
-            // Clean up the warmup message
-            await tgApi('deleteMessage', {
-              chat_id: Number(userId),
-              message_id: warmup.result.message_id
-            });
-          }
-        } catch (e) {
-          // warmup failed silently — next share will try again
-          console.warn('warmup failed:', e.message);
-        }
-      }
-
       return res.status(200).json({ success: true, id: tgRes.result.id });
     }
 
