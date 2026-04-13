@@ -950,10 +950,10 @@ function applyTgContentInsets(){
     var _plat      = (_tg && _tg.platform) || '';
     var _isAndroid = _plat === 'android' || /Android/i.test(_ua);
 
-    // ── TOP: on Android, minimum 56px for Telegram's fullscreen close button overlay ──
+    // ── TOP: on Android, ensure minimum for Telegram's fullscreen close button ──
     if(_isAndroid){
-      // contentSafeAreaInset.top should cover Telegram UI; if missing use max(safeArea, 56)
-      if(ct === 0) ct = Math.max(sa_top, 56);
+      // Use max of all sources; always at least 56px so close button doesn't overlap
+      ct = Math.max(ct, sa_top, 56);
     }
 
     if(botInset === 0 && _isAndroid){
@@ -962,24 +962,18 @@ function applyTgContentInsets(){
       if(diff > 20 && diff < 200){
         botInset = diff;
       } else {
-        // Case 2: fullscreen — check CSS env safe-area-inset-bottom
+        // Case 2: check CSS env
         var envBot = parseFloat(
           getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')
         ) || 0;
         if(envBot > 0){
-          botInset = 0; // CSS env already handles it
+          botInset = 0;
         } else {
-          // Case 3: screen.availHeight excludes physical nav bar on most Android devices
+          // Case 3: screen.availHeight reliably excludes physical nav bar
+          // Gesture nav → availHeight ≈ screenHeight → availDiff ≈ 0
+          // 3-button nav → availHeight < screenHeight → availDiff ≈ 48-60px
           var availDiff = Math.round(screen.height - (screen.availHeight || screen.height));
-          if(availDiff > 20 && availDiff < 200){
-            botInset = availDiff;
-          } else if(diff <= 15){
-            // diff ≈ 0 → gesture navigation, no physical nav bar
-            botInset = 0;
-          } else {
-            // Fallback: standard 3-button nav bar
-            botInset = 52;
-          }
+          botInset = (availDiff > 15 && availDiff < 200) ? availDiff : 0;
         }
       }
     }
@@ -1018,6 +1012,11 @@ setTimeout(function(){
   if(tg && tg.onEvent){
     try{tg.onEvent('safeAreaChanged', applyTgContentInsets);}catch(_){}
     try{tg.onEvent('contentSafeAreaChanged', applyTgContentInsets);}catch(_){}
+  }
+
+  // On Android, re-apply after fullscreen settles (some devices fire no event)
+  if(/Android/i.test(navigator.userAgent || '')) {
+    setTimeout(applyTgContentInsets, 600);
   }
 
   document.documentElement.classList.remove('tg-layout-pending');
