@@ -950,8 +950,11 @@ function applyTgContentInsets(){
     var _plat      = (_tg && _tg.platform) || '';
     var _isAndroid = _plat === 'android' || /Android/i.test(_ua);
 
-    // ── TOP: if Telegram didn't report content top, use safeArea top as fallback ──
-    if(ct === 0 && sa_top > 0) ct = sa_top;
+    // ── TOP: on Android, ensure minimum padding for Telegram's overlay close button ──
+    if(_isAndroid){
+      // Use contentSafeAreaInset → safeAreaInset → 48px minimum
+      if(ct === 0) ct = sa_top > 0 ? sa_top : 48;
+    }
 
     if(botInset === 0 && _isAndroid){
       // Case 1: non-fullscreen — viewport smaller than screen → diff = nav bar height
@@ -959,17 +962,24 @@ function applyTgContentInsets(){
       if(diff > 20 && diff < 200){
         botInset = diff;
       } else {
-        // Case 2: fullscreen mode — check screen.availHeight (excludes nav bar on 3-btn devices)
-        var availDiff = Math.round(screen.height - (screen.availHeight || screen.height));
-        if(availDiff > 20 && availDiff < 200){
-          botInset = availDiff;
+        // Case 2: fullscreen — check CSS env safe-area-inset-bottom
+        var envBot = parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')
+        ) || 0;
+        if(envBot > 0){
+          botInset = 0; // CSS env already handles it via padding
         } else {
-          // Case 3: gesture navigation — check CSS env
-          var envBot = parseFloat(
-            getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')
-          ) || 0;
-          // If envBot>0 CSS already handles it; if diff>0 use it; else no nav bar
-          if(envBot === 0 && diff > 0) botInset = diff;
+          // Case 3: screen.availHeight excludes nav bar on most Android devices
+          var availDiff = Math.round(screen.height - (screen.availHeight || screen.height));
+          if(availDiff > 20 && availDiff < 200){
+            botInset = availDiff;
+          } else if(diff === 0){
+            // Gesture navigation — no physical nav bar
+            botInset = 0;
+          } else {
+            // Fallback: standard 3-button nav bar height
+            botInset = 52;
+          }
         }
       }
     }

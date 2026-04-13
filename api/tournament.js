@@ -119,6 +119,15 @@ export default async function handler(req, res) {
           return res.status(200).json({ success: true, cleared: key });
         }
 
+        if (action === 'remove_player') {
+          if (!userId) return res.status(400).json({ error: 'Missing userId' });
+          const key = weekKey || info.weekKey;
+          let board = (await kv.get(key)) || [];
+          board = board.filter(p => String(p.userId) !== String(userId));
+          await kv.set(key, board, { ex: 60 * 60 * 24 * 14 });
+          return res.status(200).json({ success: true, removed: userId, remaining: board.length });
+        }
+
         if (action === 'force_reset') {
           // Clear board + increment reset version so clients wipe their boards
           const key = weekKey || info.weekKey;
