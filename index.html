@@ -955,16 +955,19 @@ function applyTgContentInsets(){
         if(diff > 20 && diff < 200){
           botInset = diff;
         } else {
-          // Case 2: fullscreen overlay — WebView covers nav bar, so diff ≈ 0.
+          // Case 2: fullscreen / gesture navigation — diff ≈ 0.
           // Check if CSS env(safe-area-inset-bottom) already handled it.
           var envBot = parseFloat(
             getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')
           ) || 0;
-          if(envBot === 0){
-            // Neither Telegram API, viewport diff, nor CSS env captured the Android nav bar.
-            // Apply standard Android 3-button nav bar height as guaranteed fallback.
-            botInset = 52;
+          if(envBot > 0){
+            // CSS env handled it — no extra padding needed
+            botInset = 0;
+          } else if(diff > 0 && diff <= 20){
+            // Very small diff — likely gesture nav bar, use actual diff
+            botInset = diff;
           }
+          // If diff == 0 and envBot == 0 → gesture nav with no inset, don't add fake padding
         }
       }
     }
