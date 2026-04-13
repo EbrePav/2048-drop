@@ -950,32 +950,23 @@ function applyTgContentInsets(){
     var _plat      = (_tg && _tg.platform) || '';
     var _isAndroid = _plat === 'android' || /Android/i.test(_ua);
 
-    // ── TOP: on Android, ensure minimum for Telegram's fullscreen close button ──
-    if(_isAndroid){
-      // Use max of all sources; always at least 56px so close button doesn't overlap
-      ct = Math.max(ct, sa_top, 56);
-    }
-
     if(botInset === 0 && _isAndroid){
-      // Case 1: non-fullscreen — viewport smaller than screen → diff = nav bar height
       var diff = Math.round(screen.height - window.innerHeight);
       if(diff > 20 && diff < 200){
         botInset = diff;
       } else {
-        // Case 2: check CSS env
         var envBot = parseFloat(
           getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')
         ) || 0;
-        if(envBot > 0){
-          botInset = 0;
-        } else {
-          // Case 3: screen.availHeight reliably excludes physical nav bar
-          // Gesture nav → availHeight ≈ screenHeight → availDiff ≈ 0
-          // 3-button nav → availHeight < screenHeight → availDiff ≈ 48-60px
-          var availDiff = Math.round(screen.height - (screen.availHeight || screen.height));
-          botInset = (availDiff > 15 && availDiff < 200) ? availDiff : 0;
-        }
+        if(envBot === 0) botInset = 52;
       }
+    }
+
+    // ── TOP: on Android directly set #app padding to override CSS !important ──
+    if(_isAndroid){
+      var topNeeded = Math.max(ct, sa_top, 56);
+      var appEl = document.getElementById('app');
+      if(appEl) appEl.style.setProperty('padding-top', topNeeded + 'px', 'important');
     }
 
     document.documentElement.style.setProperty('--content-top',    ct > 0       ? ct+'px'       : '0px');
@@ -1016,7 +1007,10 @@ setTimeout(function(){
 
   // On Android, re-apply after fullscreen settles (some devices fire no event)
   if(/Android/i.test(navigator.userAgent || '')) {
-    setTimeout(applyTgContentInsets, 600);
+    setTimeout(function(){
+      applyTgContentInsets();
+      if(typeof resize === 'function') try { resize(); } catch(_) {}
+    }, 600);
   }
 
   document.documentElement.classList.remove('tg-layout-pending');
