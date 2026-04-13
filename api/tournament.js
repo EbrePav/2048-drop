@@ -66,19 +66,18 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const { userId } = req.query;
-      const board = (await kv.get(info.weekKey)) || [];
-
-      // Check if this user has a reward waiting
-      let reward = null;
-      if (userId) {
-        reward = (await kv.get(`reward:${info.weekKey}:${userId}`)) || null;
-      }
+      const [board, resetVersion, reward] = await Promise.all([
+        kv.get(info.weekKey).then(b => b || []),
+        kv.get('trn_reset_version').then(v => v || 0),
+        userId ? kv.get(`reward:${info.weekKey}:${userId}`) : Promise.resolve(null)
+      ]);
 
       return res.status(200).json({
         success: true,
         ...info,
         players: board,
-        reward
+        reward: reward || null,
+        resetVersion
       });
     } catch (err) {
       return res.status(500).json({ error: err.message });
@@ -118,6 +117,14 @@ export default async function handler(req, res) {
           const key = weekKey || info.weekKey;
           await kv.del(key);
           return res.status(200).json({ success: true, cleared: key });
+        }
+
+        if (action === 'force_reset') {
+          // Clear board + increment reset version so clients wipe their boards
+          const key = weekKey || info.weekKey;
+          const newVersion = await kv.incr('trn_reset_version');
+          await kv.del(key);
+          return res.status(200).json({ success: true, cleared: key, resetVersion: newVersion });
         }
 
         return res.status(400).json({ error: 'Unknown action' });

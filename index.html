@@ -1914,7 +1914,7 @@ function openDailyBonus(){
 }
 function closeDailyBonus(){
   document.getElementById('daily-overlay').classList.remove('show');
-  if(openedFromGameOver){
+  if(openedFromGameOver||pendingFinalGameOver){
     openedFromGameOver=false;
     document.getElementById('gameover-overlay').classList.add('show');blockBar();
   } else if(openedFromPause){
@@ -3215,12 +3215,13 @@ function togglePause(){if(gameOver)return;paused=!paused;document.getElementById
 document.getElementById('pause-btn-bottom').addEventListener('click',togglePause);
 document.getElementById('resume-btn').addEventListener('click',togglePause);
 document.getElementById('trophy-btn').addEventListener('click',()=>{
-  openedFromPause=paused;
+  openedFromGameOver=pendingFinalGameOver;
+  openedFromPause=paused&&!pendingFinalGameOver;
   showLeaderboard();
 });
 document.getElementById('lb-close').addEventListener('click',()=>{
   document.getElementById('lb-overlay').classList.remove('show');
-  if(openedFromGameOver||postGameOverlayPending){
+  if(openedFromGameOver||postGameOverlayPending||pendingFinalGameOver){
     openedFromGameOver=false;
     document.getElementById('gameover-overlay').classList.add('show');blockBar();
   } else if(openedFromPause){
@@ -3543,7 +3544,7 @@ document.getElementById('shop-btn').addEventListener('click',()=>{
 });
 document.getElementById('shop-close').addEventListener('click',()=>{
   document.getElementById('shop-overlay').classList.remove('show');
-  if(openedFromGameOver){
+  if(openedFromGameOver||pendingFinalGameOver){
     openedFromGameOver=false;
     document.getElementById('gameover-overlay').classList.add('show');blockBar();
   } else if(openedFromPause){
@@ -3720,6 +3721,35 @@ async function loadTournament() {
     const res = await fetch('/api/tournament' + (uid ? '?userId=' + uid : ''));
     _trnData = await res.json();
     _updateTournamentTab();
+
+    // ── Force-reset check ──────────────────────────────────────────────
+    // If admin ran force_reset, server increments resetVersion.
+    // Clients compare against localStorage; on mismatch they wipe board + weekly score.
+    if (_trnData && typeof _trnData.resetVersion === 'number') {
+      const rvKey = lsKey('2048_trn_rv');
+      const savedRv = parseInt(localStorage.getItem(rvKey) || '0', 10);
+      if (_trnData.resetVersion > savedRv) {
+        localStorage.setItem(rvKey, String(_trnData.resetVersion));
+        // Reset weekly best so next score gets submitted
+        _trnWeeklyBest = 0;
+        try { localStorage.setItem(lsKey('2048_trn_w'), JSON.stringify({wk: _weekKeyClient(), best: 0})); } catch(e) {}
+        // Reset game board
+        if (typeof resetToFreshGame === 'function') {
+          await resetToFreshGame();
+          showToast('🏁 ' + i18n('trn_week_reset'));
+        }
+        return;
+      }
+    }
+
+    // ── Resubmit if user is missing from board ─────────────────────────
+    // Happens after admin clears the leaderboard mid-week.
+    if (_trnData && _trnData.acceptingSubmissions && uid && _trnWeeklyBest > 0) {
+      const inBoard = (_trnData.players || []).some(p => String(p.userId) === String(uid));
+      if (!inBoard) {
+        scheduleTournamentSubmit(_trnWeeklyBest);
+      }
+    }
   } catch(e) { console.warn('tournament load failed:', e); }
 }
 
