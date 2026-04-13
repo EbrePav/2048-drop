@@ -604,7 +604,7 @@ html.tg-layout-ready #app{ opacity:1; transition:opacity .12s ease; }
 }
 
 html.macbook-tg #app{
-  max-width:min(100%, 340px) !important;
+  max-width:min(100%, 460px) !important;
   padding-top: 20px !important;
   padding-bottom: 12px !important;
 }
@@ -2421,12 +2421,9 @@ function applyMacbookLayoutFix(){
 
 function resize(){
   const vw = window.innerWidth;
-  // screen.height is the physical device height — constant, never changes between
-  // launches. Padding (topPad/botPad) comes from CSS env() which is correct by the
-  // time resize() is called (700ms after load). This gives identical cell size
-  // on every launch: first open, reload, or any button.
-  const vh = window.screen.height;
   const isMacbookTG = document.documentElement.classList.contains('macbook-tg');
+  // On desktop use actual window height; on mobile use screen.height (stable, avoids chrome resize jumps)
+  const vh = isMacbookTG ? window.innerHeight : window.screen.height;
 
   const appEl = document.getElementById('app');
   const appStyle = getComputedStyle(appEl);
@@ -2445,9 +2442,9 @@ function resize(){
 
   const availH = Math.max(220, vh - verticalChrome - topPad - botPad);
 
-  const sideInset = isMacbookTG ? 10 : Math.max(6, Math.min(14, Math.round(vw * 0.028)));
-  const usableW = Math.max(220, Math.min(vw - sideInset * 2, 384));
-  const maxW = isMacbookTG ? Math.min(usableW, 320) : usableW;
+  const sideInset = isMacbookTG ? 12 : Math.max(6, Math.min(14, Math.round(vw * 0.028)));
+  const usableW = Math.max(220, Math.min(vw - sideInset * 2, isMacbookTG ? 480 : 384));
+  const maxW = isMacbookTG ? Math.min(usableW, 440) : usableW;
 
   const csByW = Math.floor((maxW - PAD * 2) / COLS);
   const csByH = Math.floor((availH - PAD * 2) / ROWS);
@@ -2463,7 +2460,7 @@ function resize(){
   }
 
   if (isMacbookTG) {
-    cs = Math.min(cs, 48);
+    cs = Math.min(cs, 76);
   }
 
   CS = cs;
