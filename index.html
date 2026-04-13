@@ -1917,6 +1917,8 @@ function closeDailyBonus(){
   if(openedFromGameOver||pendingFinalGameOver){
     openedFromGameOver=false;
     document.getElementById('gameover-overlay').classList.add('show');blockBar();
+  } else if(pendingThrowsAd){
+    document.getElementById('overlay').classList.add('show');blockBar();
   } else if(openedFromPause){
     openedFromPause=false;
     document.getElementById('pause-overlay').classList.add('show');blockBar();
@@ -3226,6 +3228,8 @@ document.getElementById('lb-close').addEventListener('click',()=>{
   if(openedFromGameOver||postGameOverlayPending||pendingFinalGameOver){
     openedFromGameOver=false;
     document.getElementById('gameover-overlay').classList.add('show');blockBar();
+  } else if(pendingThrowsAd){
+    document.getElementById('overlay').classList.add('show');blockBar();
   } else if(openedFromPause){
     openedFromPause=false;
     document.getElementById('pause-overlay').classList.add('show');blockBar();
@@ -3549,6 +3553,8 @@ document.getElementById('shop-close').addEventListener('click',()=>{
   if(openedFromGameOver||pendingFinalGameOver){
     openedFromGameOver=false;
     document.getElementById('gameover-overlay').classList.add('show');blockBar();
+  } else if(pendingThrowsAd){
+    document.getElementById('overlay').classList.add('show');blockBar();
   } else if(openedFromPause){
     openedFromPause=false;
     document.getElementById('pause-overlay').classList.add('show');blockBar();
