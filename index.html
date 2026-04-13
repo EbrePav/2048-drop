@@ -2729,20 +2729,18 @@ function checkAndMerge(newR,newC,cb){
   grp.forEach(([r,c])=>setTA(r,c,1.2,16));draw();
   setTimeout(()=>{
     if(grp.length===2){
-      // Direction purely from positions: upper→lower, right→left. Ignore which is newR/newC.
-      const[[ar,ac],[br,bc]]=grp;
-      const aFlies=ar<br||(ar===br&&ac>bc);
-      const[flyR,flyC,toR,toC]=aFlies?[ar,ac,br,bc]:[br,bc,ar,ac];
-      grid[flyR][flyC]=0;
-      animFly([{val:v,x:TX(flyC),y:TY(flyR)}],TX(toC),TY(toR),()=>{
-        const nv=mRes(v,2);score+=nv;grid[toR][toC]=nv;
+      // newR,newC is the fresh tile — it flies to the other (old) tile. Original correct behavior.
+      const other=grp.find(([r,c])=>!(r===newR&&c===newC));const[or,oc]=other;
+      grid[newR][newC]=0;
+      animFly([{val:v,x:TX(newC),y:TY(newR)}],TX(oc),TY(or),()=>{
+        const nv=mRes(v,2);score+=nv;grid[or][oc]=nv;
         chainDepth++;
         if(chainDepth>=2){
           gemsThisTurn+=1;
           addGemsOnServer(1).catch((e)=>console.log('Combo gem add failed:', e));
         }
-        sndMerge();haptic('light');setTA(toR,toC,1.4,20);mergeFX(GX(toC),GY(toR),tc(nv).bg,v,2);
-        updateHUD();applyGravityAnim(()=>{const np=findAfterGravity(toR,toC,nv);checkAndMerge(np.r,np.c,cb);});
+        sndMerge();haptic('light');setTA(or,oc,1.4,20);mergeFX(GX(oc),GY(or),tc(nv).bg,v,2);
+        updateHUD();applyGravityAnim(()=>{const np=findAfterGravity(or,oc,nv);checkAndMerge(np.r,np.c,cb);});
       });
     } else {
       const cnt=grp.length,others=grp.filter(([r,c])=>!(r===newR&&c===newC));
@@ -2766,7 +2764,12 @@ function runBoardScan(cb){
 }
 function getBestMergePos(group){
   if(group.length===0)return[0,0];
-  if(group.length===2)return group[0];
+  if(group.length===2){
+    const[a,b]=group;
+    // Vertical: return upper (smaller r) → flies down. Horizontal: return rightmost → flies left.
+    if(a[0]!==b[0]) return a[0]<b[0]?a:b;
+    return a[1]>b[1]?a:b;
+  }
   // Для групп 3+ - выбираем самый нижний кубик (больше строк = больше индекс)
   // затем самый правый для консистентности
   let best=group[0];
@@ -2778,13 +2781,10 @@ function getBestMergePos(group){
   return best;
 }
 function findAfterGravity(origR,origC,val){
-  // After gravity the tile falls down, so search downward from origR first.
-  // This avoids accidentally targeting a pre-existing tile of the same value further down.
-  for(let r=ROWS-1;r>=0;r--){
-    if(grid[r][origC]!==val)continue;
-    // Pick the closest row to where the merge happened (prefer not going past origR by much)
-    return{r,c:origC};
-  }
+  // Search downward from origR — the merged tile falls down from origR, not further than needed.
+  // Avoids picking a pre-existing same-value tile that sits below.
+  for(let r=origR;r<ROWS;r++){if(grid[r][origC]===val)return{r,c:origC};}
+  for(let r=origR-1;r>=0;r--){if(grid[r][origC]===val)return{r,c:origC};}
   return{r:origR,c:origC};
 }
 function mergeFX(px,py,color,oldV,cnt){spawnP(px,py,color,cnt*7,cnt>=3);spawnR(px,py,tc(oldV).bg);if(cnt>=3){spawnR(px,py,'#FFD700',1.5);spawnF(px,py,CS*(1.5+cnt*0.2),'rgba(255,220,50,0.85)');}else spawnF(px,py,CS*1.5,'rgba(255,255,200,0.8)');}
