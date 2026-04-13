@@ -32,8 +32,8 @@ function getWeekInfo(date = new Date()) {
   // Next reset: next Monday 00:00 UTC
   const nextMonday = new Date(monday.getTime() + 7 * 86400000);
 
-  // End of Saturday (submissions close): Sunday 00:00 UTC = nextMonday
-  const submissionsClose = nextMonday;
+  // End of Saturday (submissions close): Sunday 00:00 UTC = monday + 6 days
+  const submissionsClose = new Date(monday.getTime() + 6 * 86400000);
 
   // Seconds until Sunday (award day starts)
   const now = date.getTime();
