@@ -925,11 +925,15 @@ function applyPlatformClasses(){
   const ua = navigator.userAgent || '';
   const tgPlatform = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.platform ? String(window.Telegram.WebApp.platform) : '').toLowerCase();
   const isAppleMobile = detectAppleMobile();
-  const isMac = /Macintosh|Mac OS X/i.test(ua) || /mac/i.test(navigator.platform || '') || tgPlatform === 'macos';
-  const isTelegramDesktop = !!(window.Telegram && window.Telegram.WebApp);
+  const isAndroid = /Android/i.test(ua);
+  const isMobile = isAppleMobile || isAndroid || /Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  // Desktop Telegram: platform is macos/windows/linux/web, or non-mobile with Telegram WebApp
+  const desktopPlatforms = ['macos','windows','linux','web','weba','tdesktop'];
+  const isTgDesktop = desktopPlatforms.includes(tgPlatform) ||
+    (!isMobile && !!(window.Telegram && window.Telegram.WebApp));
 
   if(isAppleMobile) root.classList.add('ios');
-  if(isMac && isTelegramDesktop && !isAppleMobile) root.classList.add('macbook-tg');
+  if(isTgDesktop) root.classList.add('macbook-tg');
 }
 
 
