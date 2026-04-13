@@ -950,10 +950,10 @@ function applyTgContentInsets(){
     var _plat      = (_tg && _tg.platform) || '';
     var _isAndroid = _plat === 'android' || /Android/i.test(_ua);
 
-    // ── TOP: on Android, ensure minimum padding for Telegram's overlay close button ──
+    // ── TOP: on Android, minimum 56px for Telegram's fullscreen close button overlay ──
     if(_isAndroid){
-      // Use contentSafeAreaInset → safeAreaInset → 48px minimum
-      if(ct === 0) ct = sa_top > 0 ? sa_top : 48;
+      // contentSafeAreaInset.top should cover Telegram UI; if missing use max(safeArea, 56)
+      if(ct === 0) ct = Math.max(sa_top, 56);
     }
 
     if(botInset === 0 && _isAndroid){
@@ -967,17 +967,17 @@ function applyTgContentInsets(){
           getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')
         ) || 0;
         if(envBot > 0){
-          botInset = 0; // CSS env already handles it via padding
+          botInset = 0; // CSS env already handles it
         } else {
-          // Case 3: screen.availHeight excludes nav bar on most Android devices
+          // Case 3: screen.availHeight excludes physical nav bar on most Android devices
           var availDiff = Math.round(screen.height - (screen.availHeight || screen.height));
           if(availDiff > 20 && availDiff < 200){
             botInset = availDiff;
-          } else if(diff === 0){
-            // Gesture navigation — no physical nav bar
+          } else if(diff <= 15){
+            // diff ≈ 0 → gesture navigation, no physical nav bar
             botInset = 0;
           } else {
-            // Fallback: standard 3-button nav bar height
+            // Fallback: standard 3-button nav bar
             botInset = 52;
           }
         }
