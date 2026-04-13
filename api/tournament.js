@@ -87,6 +87,45 @@ export default async function handler(req, res) {
 
   // ── POST ─────────────────────────────────────────────────────────────
   if (req.method === 'POST') {
+    // ── ADMIN ──────────────────────────────────────────────────────────
+    if (req.body.adminSecret) {
+      if (req.body.adminSecret !== ADMIN_SECRET) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      try {
+        const { action, weekKey, userId, link, note } = req.body;
+
+        if (action === 'set_reward') {
+          if (!weekKey || !userId) return res.status(400).json({ error: 'Missing weekKey or userId' });
+          const reward = { link: link || null, note: note || '', activatedAt: new Date().toISOString() };
+          await kv.set(`reward:${weekKey}:${userId}`, reward, { ex: 60 * 60 * 24 * 30 });
+          return res.status(200).json({ success: true, reward });
+        }
+
+        if (action === 'remove_reward') {
+          if (!weekKey || !userId) return res.status(400).json({ error: 'Missing weekKey or userId' });
+          await kv.del(`reward:${weekKey}:${userId}`);
+          return res.status(200).json({ success: true });
+        }
+
+        if (action === 'get_board') {
+          const key = weekKey || info.weekKey;
+          const board = (await kv.get(key)) || [];
+          return res.status(200).json({ success: true, weekKey: key, board });
+        }
+
+        if (action === 'clear_board') {
+          const key = weekKey || info.weekKey;
+          await kv.del(key);
+          return res.status(200).json({ success: true, cleared: key });
+        }
+
+        return res.status(400).json({ error: 'Unknown action' });
+      } catch (err) {
+        return res.status(500).json({ error: err.message });
+      }
+    }
+
     try {
       let { userId, score, name, username, initData } = req.body;
 
@@ -150,39 +189,6 @@ export default async function handler(req, res) {
         score: player ? Number(player.score) : score,
         players: board
       });
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-
-  // ── ADMIN (POST with secret) ──────────────────────────────────────────
-  if (req.method === 'POST' && req.body.adminSecret) {
-    if (req.body.adminSecret !== ADMIN_SECRET) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-    try {
-      const { action, weekKey, userId, link, note } = req.body;
-
-      if (action === 'set_reward') {
-        if (!weekKey || !userId) return res.status(400).json({ error: 'Missing weekKey or userId' });
-        const reward = { link: link || null, note: note || '', activatedAt: new Date().toISOString() };
-        await kv.set(`reward:${weekKey}:${userId}`, reward, { ex: 60 * 60 * 24 * 30 });
-        return res.status(200).json({ success: true, reward });
-      }
-
-      if (action === 'remove_reward') {
-        if (!weekKey || !userId) return res.status(400).json({ error: 'Missing weekKey or userId' });
-        await kv.del(`reward:${weekKey}:${userId}`);
-        return res.status(200).json({ success: true });
-      }
-
-      if (action === 'get_board') {
-        const key = weekKey || info.weekKey;
-        const board = (await kv.get(key)) || [];
-        return res.status(200).json({ success: true, weekKey: key, board });
-      }
-
-      return res.status(400).json({ error: 'Unknown action' });
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
