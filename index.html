@@ -713,7 +713,7 @@ html.macbook-tg .daily-bonus-icon{
   <div id="spawn-info"></div>
   <div id="canvas-wrap">
     <div id="tournament-tab" onclick="openTournament()">
-      <img src="/tournament-icon.jpg" alt="Tournament">
+      <img src="/tournament-icon.png" alt="Tournament">
       <div id="tournament-timer">—</div>
     </div>
     <canvas id="c"></canvas>
@@ -942,32 +942,34 @@ function applyTgContentInsets(){
     var _tg = window.Telegram && window.Telegram.WebApp;
     var ct     = (_tg && _tg.contentSafeAreaInset && Number(_tg.contentSafeAreaInset.top))   || 0;
     var cb     = (_tg && _tg.contentSafeAreaInset && Number(_tg.contentSafeAreaInset.bottom)) || 0;
+    var sa_top = (_tg && _tg.safeAreaInset        && Number(_tg.safeAreaInset.top))           || 0;
     var sa_bot = (_tg && _tg.safeAreaInset        && Number(_tg.safeAreaInset.bottom))        || 0;
     var botInset = Math.max(cb, sa_bot);
 
-    if(botInset === 0){
-      var _ua   = navigator.userAgent || '';
-      var _plat = (_tg && _tg.platform) || '';
-      var _isAndroid = _plat === 'android' || /Android/i.test(_ua);
-      if(_isAndroid){
-        // Case 1: not-fullscreen — viewport is smaller than screen, diff = nav bar height
-        var diff = Math.round(screen.height - window.innerHeight);
-        if(diff > 20 && diff < 200){
-          botInset = diff;
+    var _ua        = navigator.userAgent || '';
+    var _plat      = (_tg && _tg.platform) || '';
+    var _isAndroid = _plat === 'android' || /Android/i.test(_ua);
+
+    // ── TOP: if Telegram didn't report content top, use safeArea top as fallback ──
+    if(ct === 0 && sa_top > 0) ct = sa_top;
+
+    if(botInset === 0 && _isAndroid){
+      // Case 1: non-fullscreen — viewport smaller than screen → diff = nav bar height
+      var diff = Math.round(screen.height - window.innerHeight);
+      if(diff > 20 && diff < 200){
+        botInset = diff;
+      } else {
+        // Case 2: fullscreen mode — check screen.availHeight (excludes nav bar on 3-btn devices)
+        var availDiff = Math.round(screen.height - (screen.availHeight || screen.height));
+        if(availDiff > 20 && availDiff < 200){
+          botInset = availDiff;
         } else {
-          // Case 2: fullscreen / gesture navigation — diff ≈ 0.
-          // Check if CSS env(safe-area-inset-bottom) already handled it.
+          // Case 3: gesture navigation — check CSS env
           var envBot = parseFloat(
             getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')
           ) || 0;
-          if(envBot > 0){
-            // CSS env handled it — no extra padding needed
-            botInset = 0;
-          } else if(diff > 0 && diff <= 20){
-            // Very small diff — likely gesture nav bar, use actual diff
-            botInset = diff;
-          }
-          // If diff == 0 and envBot == 0 → gesture nav with no inset, don't add fake padding
+          // If envBot>0 CSS already handles it; if diff>0 use it; else no nav bar
+          if(envBot === 0 && diff > 0) botInset = diff;
         }
       }
     }
