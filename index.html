@@ -2665,7 +2665,8 @@ function formatNum(n){
 }
 function updateHUD(){
   document.getElementById('score-main').textContent=formatNum(score);
-  if(score>allTimeBest){allTimeBest=score;saveBest(allTimeBest);_updateWeeklyScore(allTimeBest);}
+  if(score>allTimeBest){allTimeBest=score;saveBest(allTimeBest);}
+  _updateWeeklyScore(score);
   document.getElementById('best-val').textContent=formatNum(allTimeBest);
   document.getElementById('throws-count').textContent=throws+'/80';
   const pct=Math.max(0,throws/80);
@@ -2905,7 +2906,8 @@ function showTrueGameOver(){
     }));
   }catch(e){}
   saveFinalGameOverState();
-  if(finalScore>allTimeBest){allTimeBest=finalScore;saveBest(allTimeBest);_updateWeeklyScore(allTimeBest);}
+  if(finalScore>allTimeBest){allTimeBest=finalScore;saveBest(allTimeBest);}
+  _updateWeeklyScore(finalScore);
   document.getElementById('go-score').textContent=formatNum(finalScore);
   document.getElementById('go-best').textContent=formatNum(allTimeBest);
   postGameOverlayPending=true;
